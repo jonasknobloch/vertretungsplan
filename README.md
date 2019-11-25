@@ -68,7 +68,7 @@ After running the installer you can run the following to move composer.phar to a
 mv composer.phar /usr/local/bin/composer
 ```
 
-Now just run ```composer``` in order to run Composer instead of ```php composer.phar```.
+Now just run `composer` in order to run Composer instead of `php composer.phar`.
 
 ## NodeJS & npm
 
@@ -84,17 +84,17 @@ mkdir ~/.npm-global
 npm config set prefix '~/.npm-global'
 ```
 
-Now we have to add the new directory to our PATH by adding the following to ```~/.profile```.
+Now we have to add the new directory to our PATH by adding the following to `~/.profile`.
 
 ```
 PATH="$HOME/.npm-global/bin:$PATH"
 ```
 
-Update the system variables by running ```source ~/.profile```.
+Update the system variables by running `source ~/.profile`.
 
 ## Bower & polymer-cli
 
-The npm packages ```bower``` and ```polymer-cli``` are required to build the client application. Install them by running the following.
+The npm packages `bower` and `polymer-cli` are required to build the client application. Install them by running the following.
 ```
 npm install -g bower
 npm install -g polymer-cli
@@ -102,4 +102,4 @@ npm install -g polymer-cli
 
 ## Deployment
 
-Follow the readme's inside `api` and schedule` to deploy the application.
+Follow the readme's inside `api` and `schedule` to deploy the application.
