@@ -1,3 +1,10 @@
+# Vertretungsplan
+
+## Disclaimer
+
+This project was created as part of a [BeLL](https://de.wikipedia.org/wiki/Besondere_Lernleistung) in 2017.
+I put it here for the sake of enlightening others doing similar work. This is not maintained nor do I plan to in the near future.
+
 ## Installation
 
 Follow the steps below to install the application.
