@@ -1,0 +1,49 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../schedule-base-api-provider/schedule-base-api-provider.html">
+
+<dom-module id="schedule-admin-api-provider">
+    <script>
+        /**
+         * @customElement
+         * @polymer
+         */
+        class ScheduleAdminApiProvider extends ScheduleBaseApiProvider {
+            static get is() {
+                return 'schedule-admin-api-provider';
+            }
+
+            static get properties() {
+                return {
+
+                };
+            }
+
+            getAdmins() {
+                return new Promise(function (resolve) {
+                    this.generateAjaxRequest({method: 'GET', path: '/v1/admins'}).then(function (response) {
+                        resolve(response);
+                    }.bind(this));
+                }.bind(this));
+            }
+
+            addAdmin(userId) {
+                return new Promise(function (resolve) {
+                    this.generateAjaxRequest({method: 'POST', path: '/v1/admins', body: {user_id:userId}}).then(function (response) {
+                        resolve(response);
+                    }.bind(this));
+                }.bind(this));
+            }
+
+            deleteAdmin(userId) {
+                return new Promise(function (resolve) {
+                    console.log(userId);
+                    this.generateAjaxRequest({method: 'DELETE', path: '/v1/admins/'+userId}).then(function (response) {
+                        resolve(response);
+                    }.bind(this));
+                }.bind(this));
+            }
+        }
+
+        customElements.define(ScheduleAdminApiProvider.is, ScheduleAdminApiProvider);
+    </script>
+</dom-module>

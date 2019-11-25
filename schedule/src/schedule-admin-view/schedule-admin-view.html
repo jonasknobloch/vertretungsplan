@@ -1,0 +1,157 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+
+<!-- app components -->
+<link rel="import" href="../../bower_components/app-layout/app-layout.html">
+<link rel="import" href="../../bower_components/app-layout/app-scroll-effects/effects/waterfall.html">
+
+<!-- iron components -->
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/social-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/communication-icons.html">
+
+<link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../bower_components/iron-pages/iron-pages.html">
+
+<!-- Ensure Web Animations polyfill is loaded since neon-animation 2.0 doesn't import it -->
+<link rel="import" href="../../bower_components/neon-animation/web-animations.html">
+
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../bower_components/paper-menu-button/paper-menu-button.html">
+<link rel="import" href="../../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../../bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="../../bower_components/paper-toast/paper-toast.html">
+
+<!-- sub views -->
+<link rel="import" href="schedule-admin-view-users.html">
+<link rel="import" href="schedule-admin-view-schools.html">
+<link rel="import" href="schedule-admin-view-admins.html">
+
+<dom-module id="schedule-admin-view">
+
+    <template>
+        <style is="custom-style" include="iron-flex">
+            :host {
+                display: block;
+                --content-width-max: 960px;
+                --app-primary-color: var(--paper-blue-500);
+                --app-secondary-color: black;
+                --paper-tabs-selection-bar-color: white;
+            }
+
+            app-header {
+                background-color: var(--app-primary-color);
+                color: #fff;
+            }
+
+            paper-tabs {
+                padding-left: 16px;
+            }
+
+            #usersDialog paper-checkbox {
+                margin-top: 24px;
+            }
+
+            paper-menu-button {
+                padding: 0;
+            }
+
+        </style>
+        <app-header-layout>
+            <app-header slot="header" fixed effects="waterfall">
+                <app-toolbar>
+                    <div main-title>Verwaltung</div>
+
+                    <paper-menu-button horizontal-align disabled>
+                        <paper-icon-button icon="more-vert" slot="dropdown-trigger"></paper-icon-button>
+                        <paper-listbox id="menu" slot="dropdown-content" selected="{{selectedMenu}}">
+                            <!-- TODO: icons in app bar on wide screen devices -->
+                            <paper-item on-tap="refreshData">Refresh</paper-item>
+                            <paper-item on-tap="openSettings">Settings</paper-item>
+                            <paper-item on-tap="openFeedback">Send feedback</paper-item>
+                            <paper-item on-tap="openHelp">Help</paper-item>
+                            <paper-item on-tap="signOut">Sign out</paper-item>
+                        </paper-listbox>
+                    </paper-menu-button>
+                </app-toolbar>
+
+
+                <paper-tabs id="day" selected="{{view}}" no-slide sticky attr-for-selected="view" scrollable hide-scroll-buttons >
+                    <paper-tab view="users">Personen</paper-tab>
+                    <paper-tab view="schools">Einrichtungen</paper-tab>
+                    <paper-tab view="admins">Admins</paper-tab>
+                </paper-tabs>
+
+            </app-header>
+
+
+
+            <iron-pages selected="[[view]]" attr-for-selected="view">
+                <schedule-admin-view-users view="users" class="horizontal center-justified layout"></schedule-admin-view-users>
+                <schedule-admin-view-schools view="schools" class="horizontal center-justified layout"></schedule-admin-view-schools>
+                <schedule-admin-view-admins view="admins" class="horizontal center-justified layout"></schedule-admin-view-admins>
+            </iron-pages>
+
+        </app-header-layout>
+
+        <paper-toast id="toast" class="fit-bottom"></paper-toast>
+
+       </template>
+
+    <script>
+        /**
+         * @customElement
+         * @polymer
+         */
+        class ScheduleAdminView extends Polymer.Element {
+            static get is() {
+                return 'schedule-admin-view';
+            }
+
+            static get properties() {
+                return {
+                    user: {
+                        type: Object,
+                        notify: true
+                    },
+                    view: {
+                        type: String,
+                        value: 'users'
+                    },
+                };
+            }
+
+            static get observers() {
+                return []
+            }
+
+            openDialog() {
+                //this.$.upload.open();
+                Polymer.dom(this.root).querySelector('#' + this.view + 'Dialog').open();
+            }
+
+            _computeUsersDialogMethod(promoteToAdmin) {
+                return promoteToAdmin ? 'PUT' : 'POST';
+            }
+
+            _computeUsersDialogAction(promoteToAdmin, selectedUserId) {
+                return promoteToAdmin ? '../../../api/public/v1/users/'+selectedUserId : '../../../api/public/v1/managers';
+            }
+
+            _handleUserFormSubmit(event) {
+                this.$.usersGrid.clearCache();
+                this.$.toast.show({text: 'User rights changed.', duration: 3000});
+            }
+
+            _handleSchoolFormSubmit(event) {
+                this.$.schoolsGrid.clearCache();
+                this.$.toast.show({text: 'School added.', duration: 3000});
+            }
+
+            // TODO: autofocus works only on first dialog
+        }
+
+        customElements.define(ScheduleAdminView.is, ScheduleAdminView);
+    </script>
+</dom-module>

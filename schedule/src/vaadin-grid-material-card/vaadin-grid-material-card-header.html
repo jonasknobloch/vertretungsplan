@@ -1,0 +1,204 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../../bower_components/iron-pages/iron-pages.html">
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../bower_components/paper-input/paper-input.html">
+
+
+<dom-module id="vaadin-grid-material-card-header">
+
+    <template>
+
+        <style is="custom-style" include="iron-flex">
+            :host {
+                display: block;
+                background: white;
+                color: #212121;
+            }
+
+            :host([hidden]) {
+                display: none !important;
+            }
+
+            :host([selected]) {
+                background: #E3F2FD;
+            }
+
+            .header-container {
+                height: 64px;
+                width: 100%;
+
+                @apply(--layout-horizontal);
+                @apply(--layout-center);
+            }
+
+            .content-container {
+                width: 100%;
+                height: 100%;
+            }
+
+            .title {
+                margin-left: 24px;
+                font-size: 20px;
+                color: #212121;
+            }
+
+            .selected {
+                margin-left: 24px;
+                font-size: 20px;
+                color: var(--primary-color, #3f51b5);
+            }
+
+            #selected {
+                background-color: var(--grid-header-selected-color, #e8eaf6);
+            }
+
+            paper-icon-button {
+                padding: 0;
+                height: 24px;
+                width: 24px;
+            }
+
+            .view {
+                height: 100%
+            }
+
+            paper-input {
+                margin-left: 24px;
+            }
+
+            iron-icon {
+                margin-right: 14px;
+            }
+
+            .end {
+                margin-right: 14px
+            }
+
+            ::slotted(paper-icon-button) {
+                padding: 0;
+                height: 24px;
+                width: 24px;
+                margin-left: 24px;
+            }
+        </style>
+
+        <div class="header-container">
+
+            <iron-pages attr-for-selected="id" fallback-selection="default"
+                        selected="[[selectedView]]" class="content-container">
+                <div id="default" class="view horizontal layout">
+                    <div class="title horizontal layout center">[[title]]</div>
+                    <div class="flex"></div>
+                    <div class="horizontal layout center end">
+                        <paper-icon-button icon="filter-list" on-tap="_search"></paper-icon-button>
+                    </div>
+                </div>
+                <div id="selected" class="view horizontal layout">
+                    <div class="selected horizontal layout center">[[selectedItemsInfo]]</div>
+                    <div class="flex"></div>
+                    <div class="horizontal layout center end">
+                        <slot name="button"></slot>
+                    </div>
+                </div>
+                <div id="search" class="view horizontal layout">
+                    <div class="horizontal layout center">
+                        <paper-input id="searchBar" label="Suche" value="{{filter}}" no-label-float>
+                            <iron-icon icon="search" slot="prefix"></iron-icon>
+                        </paper-input>
+                    </div>
+                    <div class="flex"></div>
+                    <div class="title horizontal layout center end">
+                        <paper-icon-button icon="close" on-tap="_search"></paper-icon-button>
+                    </div>
+                </div>
+            </iron-pages>
+
+        </div>
+
+    </template>
+
+    <script>
+        /**
+         * @customElement
+         * @polymer
+         */
+        class VaadinGridMaterialCardHeader extends Polymer.Element {
+            static get is() {
+                return 'vaadin-grid-material-card-header';
+            }
+
+            static get properties() {
+                return {
+                    title: {
+                        type: String
+                    },
+
+                    selectedItems: {
+                        type: Array
+                    },
+
+                    selected: {
+                        type: Boolean,
+                        value: false,
+                        computed: '_computeSelected(selectedItems.length)'
+                    },
+
+                    selectedItemsInfo: {
+                        type: String,
+                        value: '1 item selected',
+                        computed: '_computeSelectedItemsInfo(selectedItems.length)'
+                    },
+
+                    search: {
+                        type: Boolean,
+                        value: false
+                    },
+
+                    selectedView: {
+                        type: String,
+                        computed: '_computeSelectedView(selected, search)'
+                    },
+
+                    filter: {
+                        type: String,
+                        notify: true
+                    }
+                };
+            }
+
+            static get observers() {
+                return []
+            }
+
+            _computeSelected(length) {
+                return length > 0 ;
+            }
+
+            _computeSelectedItemsInfo(length) {
+                return length === 1 ? '1 Eintrag ausgewählt' : length + ' Einträge ausgewählt';
+            }
+
+            _computeSelectedView(selected, search) {
+                return selected ? 'selected' : search ? 'search' : 'default';
+            }
+
+            _search() {
+                this.search = !this.search;
+
+                if (this.search) {
+                    this.$.searchBar.focus();
+                }
+
+                if (!this.search) {
+
+                    // TODO: only reset if filter changed
+                    this.filter = null;
+                }
+            }
+        }
+
+        customElements.define(VaadinGridMaterialCardHeader.is, VaadinGridMaterialCardHeader);
+    </script>
+</dom-module>

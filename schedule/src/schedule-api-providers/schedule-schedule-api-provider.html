@@ -1,0 +1,50 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../schedule-base-api-provider/schedule-base-api-provider.html">
+
+<dom-module id="schedule-schedule-api-provider">
+    <script>
+        /**
+         * @customElement
+         * @polymer
+         */
+        class ScheduleScheduleApiProvider extends ScheduleBaseApiProvider {
+            static get is() {
+                return 'schedule-schedule-api-provider';
+            }
+
+            static get properties() {
+                return {
+                    key: Number
+                };
+            }
+
+            getSchedule() {
+                return new Promise(function (resolve, reject) {
+                    this.generateAjaxRequest({method: 'GET', path: '/v1/schedules/'+this.key}).then(function (response) {
+                        resolve(response);
+                    }.bind(this), function (error) {
+                        reject(error);
+                    });
+                }.bind(this));
+            }
+
+            deleteSchedule() {
+                return new Promise(function (resolve) {
+                    this.generateAjaxRequest({method: 'DELETE', path: '/v1/schedules/'+this.key}).then(function (response) {
+                        resolve(response);
+                    }.bind(this));
+                }.bind(this));
+            }
+
+            getScheduleLessonsWithChanges(selectedClass, selectedDate) {
+                return new Promise(function (resolve) {
+                    this.generateAjaxRequest({method: 'GET', path: '/v1/schedules/'+this.key+'/lessons/'+selectedClass+/changes/+selectedDate}).then(function (response) {
+                        resolve(response);
+                    }.bind(this));
+                }.bind(this));
+            }
+        }
+
+        customElements.define(ScheduleScheduleApiProvider.is, ScheduleScheduleApiProvider);
+    </script>
+</dom-module>

@@ -1,0 +1,55 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../schedule-base-api-provider/schedule-base-api-provider.html">
+
+<dom-module id="schedule-school-api-provider">
+    <script>
+        /**
+         * @customElement
+         * @polymer
+         */
+        class ScheduleSchoolApiProvider extends ScheduleBaseApiProvider {
+            static get is() {
+                return 'schedule-school-api-provider';
+            }
+
+            static get properties() {
+                return {
+                };
+            }
+
+            getSchools() {
+                return new Promise(function (resolve) {
+                    this.generateAjaxRequest({method: 'GET', path: '/v1/schools'}).then(function (response) {
+                        resolve(response);
+                    }.bind(this));
+                }.bind(this));
+            }
+
+            addSchool(id, name) {
+                return new Promise(function (resolve) {
+                    this.generateAjaxRequest({method: 'POST', path: '/v1/schools', body: {id:id, name:name}}).then(function (response) {
+                        resolve(response);
+                    }.bind(this));
+                }.bind(this));
+            }
+
+            editSchool(id, name) {
+                return new Promise(function (resolve) {
+                    this.generateAjaxRequest({method: 'PUT', path: '/v1/schools/'+id, params: {name:name}}).then(function (response) {
+                        resolve(response);
+                    }.bind(this));
+                }.bind(this));
+            }
+
+            deleteSchool(id) {
+                return new Promise(function (resolve) {
+                    this.generateAjaxRequest({method: 'DELETE', path: '/v1/schools/'+id}).then(function (response) {
+                        resolve(response);
+                    }.bind(this));
+                }.bind(this));
+            }
+        }
+
+        customElements.define(ScheduleSchoolApiProvider.is, ScheduleSchoolApiProvider);
+    </script>
+</dom-module>

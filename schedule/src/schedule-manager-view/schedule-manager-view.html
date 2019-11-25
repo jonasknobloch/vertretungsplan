@@ -1,0 +1,350 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+
+<link rel="import" href="../../bower_components/app-layout/app-layout.html">
+<link rel="import" href="../../bower_components/app-layout/app-scroll-effects/effects/waterfall.html">
+
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+
+<!-- Ensure Web Animations polyfill is loaded since neon-animation 2.0 doesn't import it -->
+<link rel="import" href="../../bower_components/neon-animation/web-animations.html">
+
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../bower_components/paper-menu-button/paper-menu-button.html">
+<link rel="import" href="../../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../../bower_components/paper-fab/paper-fab.html">
+<link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../bower_components/paper-toast/paper-toast.html">
+<link rel="import" href="../../bower_components/paper-card/paper-card.html">
+
+<link rel="import" href="../../bower_components/vaadin-upload/vaadin-upload.html">
+<link rel="import" href="../vaadin-grid-material-card/vaadin-grid-material-card.html">
+
+<link rel="import" href="../schedule-api-providers/schedule-change-api-provider.html">
+<link rel="import" href="../schedule-api-providers/schedule-schedule-api-provider.html">
+<link rel="import" href="../schedule-base-api-provider/schedule-base-api-provider.html">
+
+<link rel="import" href="../schedule-shared-styles/schedule-shared-styles.html">
+
+<dom-module id="schedule-manager-view">
+
+    <template>
+        <style include="iron-flex schedule-shared-styles">
+            :host {
+                display: block;
+                --content-width-max: 960px;
+                --primary-color: var(--paper-blue-500);
+                --secondary-color: black;
+            }
+
+            app-header {
+                background-color: var(--primary-color);
+                color: #fff;
+            }
+
+            paper-card {
+                width: 100%;
+                max-width: var(--content-width-max, 960px);
+                margin-top: 32px;
+            }
+
+            vaadin-upload {
+                margin: 24px;
+            }
+        </style>
+        <app-header-layout>
+            <app-header slot="header" fixed effects="waterfall">
+                <app-toolbar>
+                    <div main-title>[[school.name]]</div>
+                    <paper-menu-button horizontal-align>
+                        <paper-icon-button icon="more-vert" slot="dropdown-trigger"></paper-icon-button>
+                        <paper-listbox id="menu" slot="dropdown-content" selected="{{selectedMenu}}" disabled>
+                            <!-- TODO: icons in app bar on wide screen devices -->
+                            <paper-item on-tap="refreshData">Refresh</paper-item>
+                            <paper-item on-tap="openSettings">Settings</paper-item>
+                            <paper-item on-tap="openFeedback">Send feedback</paper-item>
+                            <paper-item on-tap="openHelp">Help</paper-item>
+                            <paper-item on-tap="signOut">Sign out</paper-item>
+                        </paper-listbox>
+                    </paper-menu-button>
+                </app-toolbar>
+            </app-header>
+            <div>
+
+                <div class="horizontal center-justified layout">
+                    <paper-card class="alert" heading="Stundenplan">
+                        <div class="card-content">
+                            <template is="dom-if" if="[[!scheduleAvailable]]">Stundenplan nicht gefunden. Bitte den aktuellen Stundenplan hochladen.</template>
+                            <template is="dom-if" if="[[scheduleAvailable]]">[[schedule.created_at]]</template>
+                        </div>
+                        <div class="card-actions" hidden="[[!scheduleAvailable]]">
+                            <paper-button on-tap="openDeleteScheduleDialog">Stundenplan Löschen</paper-button>
+                        </div>
+                    </paper-card>
+                </div>
+
+                <div class="horizontal center-justified layout">
+
+                    <!--<schedule-manager-school-grid class="grid" changes="[[changes]]"></schedule-manager-school-grid>-->
+
+                    <vaadin-grid-material-card
+                            id="grid"
+                            api-provider="[[changeApiProvider]]"
+                            provider-method="getChanges"
+                            selected-items="{{selectedChanges}}"
+                            title="Importierte Vertretungspläne"
+                            page-size="10">
+
+                        <paper-icon-button slot="button" icon="delete" on-tap="_deleteSelected"></paper-icon-button>
+
+                        <vaadin-grid-column width="96px" flex-grow="0">
+                            <template class="header">
+                                <vaadin-grid-sorter path="id">
+                                    <div class="cell numeric">
+                                        <iron-icon icon="icons:arrow-upward"></iron-icon>
+                                        <span>#</span>
+                                    </div>
+                                </vaadin-grid-sorter>
+                            </template>
+                            <template>
+                                <div class="cell numeric">[[item.id]]</div>
+                            </template>
+                        </vaadin-grid-column>
+
+                        <vaadin-grid-column>
+                            <template class="header">
+                                <vaadin-grid-sorter path="date">
+                                    <div class="cell">
+                                        <span>Datum</span>
+                                        <iron-icon icon="icons:arrow-upward"></iron-icon>
+                                    </div>
+                                </vaadin-grid-sorter>
+                            </template>
+                            <template>
+                                <div class="cell">[[item.date]]</div>
+                            </template>
+                        </vaadin-grid-column>
+
+                        <vaadin-grid-column>
+                            <template class="header">
+                                <vaadin-grid-sorter path="week">
+                                    <div class="cell">
+                                        <span>Woche</span>
+                                        <iron-icon icon="icons:arrow-upward"></iron-icon>
+                                    </div>
+                                </vaadin-grid-sorter>
+                            </template>
+                            <template>
+                                <div class="cell">[[item.week]]</div>
+                            </template>
+                        </vaadin-grid-column>
+
+                        <vaadin-grid-column>
+                            <template class="header">
+                                <vaadin-grid-sorter path="created_at">
+                                    <div class="cell last">
+                                        <span>Erstellt</span>
+                                        <iron-icon icon="icons:arrow-upward"></iron-icon>
+                                    </div>
+                                </vaadin-grid-sorter>
+                            </template>
+                            <template>
+                                <div class="cell last">[[item.created_at]]</div>
+                            </template>
+                        </vaadin-grid-column>
+                    </vaadin-grid-material-card>
+                </div>
+
+            </div>
+            </div>
+        </app-header-layout>
+
+        <paper-fab icon="add" on-tap="openUploadDialog"></paper-fab>
+
+        <paper-dialog id="deleteScheduleDialog" modal>
+            <h2>Studenplan löschen?</h2>
+            <p>Eine Wiederherstellung des Stundenplans ist nicht möglich.</p>
+            <div class="buttons">
+                <paper-button dialog-dismiss>Abbrechen</paper-button>
+                <paper-button dialog-confirm autofocus on-tap="_deleteSchedule">Löschen</paper-button>
+            </div>
+        </paper-dialog>
+
+
+        <paper-dialog id="uploadDialog" modal>
+            <vaadin-upload
+                    id="upload"
+                    accept=".xml"
+                    style="padding: 20px; "
+                    target="[[_generateTargetURL('/v1/uploads', baseApiProvider)]]/[[school.id]]"
+                    files="{{files}}"
+                    max-files="1"
+                    on-upload-success="_handleUploadSuccess"
+                    on-upload-response="_handleUploadResponse">
+                <iron-icon slot="drop-label-icon" icon="description"></iron-icon>
+                <span slot="drop-label">"Indiware"-Export hier ablegen.</span>
+            </vaadin-upload>
+            <div class="buttons">
+                <paper-button dialog-dismiss autofocus>Abbrechen</paper-button>
+            </div>
+        </paper-dialog>
+
+        <paper-toast id="toast" class="fit-bottom"></paper-toast>
+
+        <schedule-base-api-provider id="baseApiProvider"></schedule-base-api-provider>
+
+        <schedule-change-api-provider id="changeApiProvider" key="[[school.id]]"></schedule-change-api-provider>
+        <schedule-schedule-api-provider id="scheduleApiProvider" key="[[school.id]]"></schedule-schedule-api-provider>
+
+    </template>
+
+    <script>
+        /**
+         * @customElement
+         * @polymer
+         */
+        class ScheduleManagerView extends Polymer.Element {
+            static get is() {
+                return 'schedule-manager-view';
+            }
+
+            static get properties() {
+                return {
+                    user: {
+                        type: Object,
+                        notify: true
+                    },
+
+                    school: {
+                        type: Object,
+                        computed: '_computeSchool(user)'
+                    },
+
+                    selectedChanges: {
+                        type: Array
+                    },
+
+                    selectedItem: {
+                        type: Array
+                    },
+
+                    schedule: {
+                        type: Object
+                    },
+
+                    scheduleAvailable: {
+                        type: Boolean
+                    }
+
+                };
+            }
+
+            static get observers() {
+                return [
+                    '_selectedItemsChanged(selectedItems.*)'
+                ]
+            }
+
+            ready() {
+                super.ready();
+
+                this.baseApiProvider = this.$.baseApiProvider;
+                this.changeApiProvider = this.$.changeApiProvider;
+                this.scheduleApiProvider = this.$.scheduleApiProvider;
+
+                this.checkScheduleAvailability();
+                this.$.upload.i18n.addFiles.one = 'Datei auswählen';
+                this.$.upload.notifyPath('i18n.addFiles.one');
+            }
+
+            checkScheduleAvailability() {
+                this.scheduleApiProvider.getSchedule().then(function (response) {
+                    this.schedule = response;
+                    this.scheduleAvailable = true;
+                }.bind(this) , function (error) {
+                    this.scheduleAvailable = false;
+                }.bind(this));
+            }
+
+            _computeSchool(user) {
+                return user.manager.schools[0];
+            }
+
+            openUploadDialog() {
+                // on-tap="dialog.open()"
+
+                this.$.uploadDialog.open();
+            }
+
+            openDeleteScheduleDialog() {
+                this.$.deleteScheduleDialog.open();
+            }
+
+            _selectedItemsChanged() {
+                //console.log(this.selectedItems);
+            }
+
+            // TODO: refresh table after upload -> reset data and clear cache
+            // TODO: add delete method
+            // TODO: add edit method
+            // TODO: waterfall effect on toolbar
+
+            _handleUploadSuccess(event) {
+                console.log(event.detail.xhr.response);
+
+                var response = JSON.parse(event.detail.xhr.response);
+
+                if (response.fileContent !== undefined) {
+                    switch (response.fileContent) {
+                        case 'lessons':
+                            // TODO: recheck using api
+                            this.checkScheduleAvailability();
+                            break;
+                        case 'changes':
+                            this.$.grid.clearCache();
+                            break;
+                    }
+                }
+
+                this.$.uploadDialog.close();
+                this.files = [];
+                this.$.toast.show({text: 'Export erfolgreich importiert.', duration: 3000});
+            }
+
+            _handleUploadResponse(event) {
+                console.log(event.detail.xhr.status, event.detail.xhr.statusText);
+            }
+
+            _deleteSelected() {
+                var count = this.selectedChanges.length;
+
+                this.selectedChanges.forEach(function (change) {
+                    this.changeApiProvider.deleteChangeByDate(change.date).then(function () {
+                        count = count -1;
+
+                        if (count === 0) {
+                            this.selectedChanges = [];
+                            this.$.grid.clearCache();
+                        }
+                    }.bind(this));
+                }.bind(this));
+            }
+
+            _deleteSchedule() {
+                this.scheduleApiProvider.deleteSchedule().then(function (response) {
+                    console.log(response);
+                    this.checkScheduleAvailability();
+                    this.$.toast.show({text: response.message, duration: 3000});
+                }.bind(this));
+            }
+
+            _generateTargetURL(path) {
+                return this.baseApiProvider.generateTargetURL(path);
+            }
+        }
+
+        customElements.define(ScheduleManagerView.is, ScheduleManagerView);
+    </script>
+</dom-module>

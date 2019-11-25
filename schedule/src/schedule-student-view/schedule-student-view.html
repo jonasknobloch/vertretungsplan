@@ -1,0 +1,302 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+
+<link rel="import" href="../../bower_components/app-layout/app-layout.html">
+<link rel="import" href="../../bower_components/app-layout/app-scroll-effects/effects/waterfall.html">
+
+<link rel="import" href="../../bower_components/paper-styles/color.html">
+<link rel="import" href="../../bower_components/paper-tabs/paper-tabs.html">
+
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+
+<!-- Ensure Web Animations polyfill is loaded since neon-animation 2.0 doesn't import it -->
+<link rel="import" href="../../bower_components/neon-animation/web-animations.html">
+
+<link rel="import" href="schedule-student-lesson.html">
+<link rel="import" href="schedule-student-change.html">
+
+<link rel="import" href="../schedule-api-providers/schedule-date-api-provider.html">
+<link rel="import" href="../schedule-api-providers/schedule-schedule-api-provider.html">
+<link rel="import" href="../schedule-api-providers/schedule-student-api-provider.html">
+
+<dom-module id="schedule-student-view">
+    <template>
+        <style include="iron-flex">
+            :host {
+                display: block;
+                --content-width-max: 640px;
+                --app-primary-color: var(--paper-blue-500);
+                --app-secondary-color: black;
+                --paper-card-margin: 8px;
+                --paper-tabs-selection-bar-color: white;
+            }
+
+            [hidden] {
+                display: none!important;
+            }
+
+            app-header {
+                background-color: var(--app-primary-color);
+                color: #fff;
+            }
+
+            paper-card {
+                /*
+                    TODO: remove
+                */
+                width: 100%;
+                max-width: var(--content-width-max);
+                margin-top: var(--paper-card-margin);
+                margin-left: var(--paper-card-margin);
+                margin-right: var(--paper-card-margin);
+            }
+
+            app-toolbar {
+                max-width: var(--content-width-max);
+                margin: auto;
+            }
+
+            paper-tabs {
+                max-width: var(--content-width-max);
+                margin: auto;
+            }
+
+            .info {
+                width: 100%;
+                max-width: var(--content-width-max);
+
+                margin-top: 16px;
+                margin-left: var(--paper-card-margin);
+                margin-right: var(--paper-card-margin);
+                margin-bottom: var(--paper-card-margin);
+            }
+
+            .date {
+                font-size: 24px;
+                color: var(--paper-grey-800);
+            }
+
+            .refresh {
+                font-size: 16px;
+                color: var(--paper-grey-700);
+            }
+
+            .lesson {
+                width: 100%;
+                max-width: var(--content-width-max);
+
+                margin-top: var(--paper-card-margin);
+                margin-left: var(--paper-card-margin);
+                margin-right: var(--paper-card-margin);
+            }
+
+        </style>
+
+        <app-header-layout>
+            <app-header slot="header" fixed condenses effects="waterfall">
+
+                <app-toolbar>
+                    <div main-title>[[selectedSchool.name]]</div>
+                    <div>[[selectedClass]]</div>
+                </app-toolbar>
+
+                <paper-tabs id="day" selected="{{selectedDate}}" no-slide sticky attr-for-selected="date">
+                    <template is="dom-repeat" items="[[dates]]">
+                        <paper-tab date="[[item.date]]">[[item.weekDay]]</paper-tab>
+                    </template>
+                </paper-tabs>
+
+            </app-header>
+            <div>
+
+
+                <div class="horizontal center-justified layout">
+                    <div class="info">
+                        <div class="date">[[_computeDateString(dates, selectedDate)]]</div>
+                        <div class="refresh">Last refresh: [[lastRefresh]]</div>
+                    </div>
+                </div>
+
+                <template is="dom-if" if="[[isLoading]]">
+                    <div class="horizontal center-justified layout">
+                        <span>Loading...</span>
+                    </div>
+                </template>
+
+                <!-- TODO: check performance dom-if restamp vs dom-repeat render() -->
+                <template is="dom-if" if="[[!isLoading]]" restamp="[[!refreshingData]]">
+
+                    <template is="dom-repeat" items="[[schedule]]">
+                        <div class="horizontal center-justified layout">
+                            <schedule-student-lesson data="[[item]]" class="lesson" refreshing-data="[[refreshingData]]" on-favourite-changed="_favouriteChanged"></schedule-student-lesson>
+                        </div>
+                    </template>
+
+
+                    <template is="dom-if" if="[[unmatched.length]]">
+
+                        <div class="horizontal center-justified layout">
+                            <div class="info">
+                                <div class="date">Weitere Änderungen</div>
+                                <div class="refresh">Die folgenden Änderungen konnten nicht in den Stundenplan eingeordnet werden. Bei Unklarheiten bitte den schuleigenen Vertretungplan überprüfen.</div>
+                            </div>
+                        </div>
+
+
+                        <template is="dom-repeat" items="[[unmatched]]">
+                            <div class="horizontal center-justified layout">
+                                <schedule-student-change change="[[item]]" class="lesson"></schedule-student-change>
+                            </div>
+                        </template>
+
+                    </template>
+
+                </template>
+
+                <!-- footer -->
+                <template is="dom-if" if="[[!isLoading]]">
+                <div class="horizontal center-justified layout">
+                    <div class="info">
+                        <div class="date">Disclaimer</div>
+                        <div class="refresh">
+                            Für die Richtigkeit der Angaben kann nicht garantiert werden. Bindend ist stets der schuleigene Vertretungsplan.
+                        </div>
+                    </div>
+                </div>
+                </template>
+
+                <!-- spacer -->
+                <div style="height: 16px;"></div>
+
+            </div>
+        </app-header-layout>
+
+        <schedule-date-api-provider id="dateApiProvider"></schedule-date-api-provider>
+        <schedule-schedule-api-provider id="scheduleApiProvider" key="[[selectedSchool.id]]"></schedule-schedule-api-provider>
+        <schedule-student-api-provider id="studentApiProvider" user-id="[[user.id]]" school-id="[[selectedSchool.id]]"></schedule-student-api-provider>
+
+    </template>
+
+    <script>
+        /**
+         * @customElement
+         * @polymer
+         */
+        class ScheduleStudentView extends Polymer.Element {
+            static get is() {
+                return 'schedule-student-view';
+            }
+
+            static get properties() {
+                return {
+                    user: {
+                        type: Object,
+                        observer: '_userChanged'
+                    },
+
+                    dateString: {
+                        type: String,
+                        computed: '_computeDateString(dates, selectedDate)'
+                    },
+
+                    refreshingData: {
+                        type: Boolean,
+                        value: false
+                    }
+                };
+            }
+
+            static get observers() {
+                return [
+                    // Observer method name, followed by a list of dependencies, in parenthesis
+                    //'timetableNavigationChanged(availableDates, showTimetableNavigation)'
+
+                    '_scheduleParamsChanged(selectedSchool.id, selectedClass, selectedDate)',
+                ]
+            }
+
+            ready() {
+                super.ready();
+
+                this.isLoading = true;
+
+                this.dateApiProvider = this.$.dateApiProvider;
+                this.scheduleApiProvider = this.$.scheduleApiProvider;
+                this.studentApiProvider = this.$.studentApiProvider;
+
+                this.dateApiProvider.getSchoolDatesByRange(3).then(function (dates) {
+                    this.dates = dates;
+                    this.selectedDate = dates[0].date;
+                }.bind(this));
+            }
+
+            _computeDateString(dates, selectedDate) {
+                if (dates && selectedDate) {
+                    return dates.find(obj => obj.date === selectedDate).dateString;
+                }
+            }
+
+            _userChanged(user) {
+                if (user !== undefined) {
+                    const classes = user.student.classes;
+                    const schools = user.student.schools;
+                    const currentSchoolId = parseInt(Object.keys(classes)[0]);
+
+                    this.selectedClass = classes[currentSchoolId][0];
+                    this.selectedSchool = schools.find(school => school.id === currentSchoolId);
+                    // console.log(this.selectedSchool);
+                }
+            }
+
+            _scheduleParamsChanged(selectedSchoolId, selectedClass, selectedDate) {
+                this.isLoading = true;
+                if (selectedSchoolId && selectedClass && selectedDate) {
+                    this.scheduleApiProvider.getScheduleLessonsWithChanges(selectedClass, selectedDate).then(function (response) {
+                        this.schedule = response.schedule;
+                        this.unmatched = response.unmatched;
+                        this.lastRefresh = new Date(Date.now()).toLocaleDateString('de-DE', { year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' });
+                        this.isLoading = false;
+                    }.bind(this));
+                }
+            }
+
+            _favouriteChanged(event) {
+                this._deleteFavouriteIfNecessary(event.detail.deleteFavourite).then(function () {
+                    this._addFavouriteIfNecessary(event.detail.addFavourite).then(function () {
+                        this.refreshingData = true;
+                        this.scheduleApiProvider.getScheduleLessonsWithChanges(this.selectedClass, this.selectedDate).then(function (response) {
+                            this.schedule = response.schedule;
+                            this.unmatched = response.unmatched;
+                            this.refreshingData = false;
+                        }.bind(this));
+                    }.bind(this));
+                }.bind(this));
+            }
+
+            _addFavouriteIfNecessary(lesson) {
+                return new Promise(function (resolve) {
+                    if (lesson) {
+                        this.studentApiProvider.addLesson(lesson.subject, lesson.teacher, lesson.group).then(function () {
+                            resolve();
+                        }.bind(this));
+                    } else {
+                        resolve();
+                    }
+                }.bind(this));
+            }
+
+            _deleteFavouriteIfNecessary(id) {
+                return new Promise(function (resolve) {
+                    if (id) {
+                        this.studentApiProvider.deleteLesson(id).then(function () {
+                            resolve();
+                        }.bind(this));
+                    } else {
+                        resolve();
+                    }
+                }.bind(this));
+            }
+        }
+
+        customElements.define(ScheduleStudentView.is, ScheduleStudentView);
+    </script>
+</dom-module>

@@ -1,0 +1,335 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+
+<link rel="import" href="../schedule-shared-styles/schedule-shared-styles.html">
+<link rel="import" href="../schedule-material-chip/schedule-material-chip.html">
+
+<link rel="import" href="../vaadin-grid-material-card/vaadin-grid-material-card.html">
+
+<link rel="import" href="../schedule-api-providers/schedule-manager-api-provider.html">
+<link rel="import" href="../schedule-api-providers/schedule-user-api-provider.html">
+<link rel="import" href="../schedule-api-providers/schedule-school-api-provider.html">
+
+<dom-module id="schedule-admin-view-users">
+
+    <template>
+
+        <style include="schedule-shared-styles">
+        </style>
+
+        <vaadin-grid-material-card
+                id="usersGrid"
+                api-provider="[[userApiProvider]]"
+                provider-method="getUsers"
+                relations="[[getUsersRelations]]"
+                selected-items="{{selectedUsers}}"
+                title="Personen"
+                page-size="10">
+
+            <paper-icon-button slot="button" on-tap="_openEditDialog" icon="icons:create" hidden="[[_editUserVisible(selectedUsers.length)]]"></paper-icon-button>
+            <paper-icon-button slot="button" on-tap="_deleteSelectedUsers" icon="icons:delete"></paper-icon-button>
+
+            <vaadin-grid-column>
+                <template class="header">
+                    <vaadin-grid-sorter path="id">
+                        <div class="cell">
+                            <span>SSO ID</span>
+                            <iron-icon icon="icons:arrow-upward"></iron-icon>
+                        </div>
+                    </vaadin-grid-sorter>
+                </template>
+                <template>
+                    <div class="cell">[[item.id]]</div>
+                </template>
+            </vaadin-grid-column>
+
+            <vaadin-grid-column>
+                <template class="header">
+                    <vaadin-grid-sorter path="first_name">
+                        <div class="cell">
+                            <span>Vorname</span>
+                            <iron-icon icon="icons:arrow-upward"></iron-icon>
+                        </div>
+                    </vaadin-grid-sorter>
+                </template>
+                <template>
+                    <div class="cell">[[item.first_name]]</div>
+                </template>
+            </vaadin-grid-column>
+            <vaadin-grid-column>
+                <template class="header">
+                    <vaadin-grid-sorter path="last_name">
+                        <div class="cell">
+                            <span>Nachname</span>
+                            <iron-icon icon="icons:arrow-upward"></iron-icon>
+                        </div>
+                    </vaadin-grid-sorter>
+                </template>
+                <template>
+                    <div class="cell">[[item.last_name]]</div>
+                </template>
+            </vaadin-grid-column>
+
+            <vaadin-grid-column>
+                <template class="header">
+                    <vaadin-grid-sorter path="email">
+                        <div class="cell">
+                            <span>Email</span>
+                            <iron-icon icon="icons:arrow-upward"></iron-icon>
+                        </div>
+                    </vaadin-grid-sorter>
+                </template>
+                <template>
+                    <div class="cell">[[item.email]]</div>
+                </template>
+            </vaadin-grid-column>
+
+            <vaadin-grid-column flex-grow="5">
+                <template class="header">
+                    <vaadin-grid-sorter path="manager.schools">
+                        <div class="cell last">
+                            <span>Schulen</span>
+                            <iron-icon icon="icons:arrow-upward"></iron-icon>
+                        </div>
+                    </vaadin-grid-sorter>
+                </template>
+                <template>
+                    <div class="cell last">
+                        <template is="dom-repeat" items="[[item.manager.schools]]">[[item.name]], </template>
+                    </div>
+                </template>
+            </vaadin-grid-column>
+        </vaadin-grid-material-card>
+
+        <paper-dialog id="editUserDialog" modal>
+            <h2>Nutzer bearbeiten</h2>
+
+            <paper-input label="ID" value="[[selectedUser.id]]" disabled></paper-input>
+            <paper-checkbox checked="{{isManager}}">Verwalter</paper-checkbox><br>
+
+            <template is="dom-if" if="[[isManager]]">
+                <div>
+                <template is="dom-repeat" items="[[managedSchools]]">
+                    <!--<span>[[item.name]]<paper-icon-button icon="icons:clear" value$="[[item]]" on-tap="_removeSchoolFromManagedSchools"></paper-icon-button></span><br>-->
+                    <schedule-material-chip class="mulm" item=[[item]] on-delete="_removeSchoolFromManagedSchools">
+                        <span slot="content">[[item.name]]</span>
+                    </schedule-material-chip><br>
+                </template>
+                </div>
+                <vaadin-combo-box
+                        id="selectSchool"
+                        label="Schule hinzufügen"
+                        items="[[schools]]"
+                        item-value-path="id"
+                        item-label-path="id"
+                        selected-item="{{selectedSchool}}">
+                    <template>
+                        <paper-item>[[item.name]]</paper-item>
+                    </template>
+                </vaadin-combo-box>
+            </template>
+
+            <div class="buttons">
+                <paper-button on-tap="_dismissEditUserDialog">Cancel</paper-button>
+                <paper-button on-tap="_confirmEditUserDialog">Accept</paper-button>
+            </div>
+        </paper-dialog>
+
+        <schedule-manager-api-provider id="managerApiProvider"></schedule-manager-api-provider>
+        <schedule-user-api-provider id="userApiProvider"></schedule-user-api-provider>
+        <schedule-school-api-provider id="schoolApiProvider"></schedule-school-api-provider>
+    </template>
+
+    <script>
+        /**
+         * @customElement
+         * @polymer
+         */
+        class ScheduleAdminViewUsers extends Polymer.Element {
+            static get is() {
+                return 'schedule-admin-view-users';
+            }
+
+            static get properties() {
+                return {
+                    managedSchools: {
+                        type: Array,
+                    },
+                    selectedSchool: {
+                        type: Object,
+                        observer: '_selectedSchoolChanged'
+                    },
+                    isManager: {
+                        type: Boolean,
+                        value: false
+                    },
+                    getUsersRelations: {
+                        type: Array,
+                        value: ['manager.schools']
+                    }
+                };
+            }
+
+            static get observers() {
+                return []
+            }
+
+            ready() {
+                super.ready();
+
+                this.managerApiProvider = this.$.managerApiProvider;
+                this.userApiProvider = this.$.userApiProvider;
+                this.schoolApiProvider = this.$.schoolApiProvider;
+
+                this.schoolApiProvider.getSchools().then(function (response) {
+                    this.schools = response;
+                }.bind(this));
+            }
+
+            _selectedSchoolChanged(school) {
+                if (school) {
+                    if (JSON.stringify(this.managedSchools).indexOf(JSON.stringify(school)) === -1) {
+                        this.push('managedSchools', school);
+                    }
+
+                    this.selectedSchool = null;
+                }
+            }
+
+
+            _openEditDialog() {
+                if (this.selectedUsers.length === 1) {
+
+                    var body = document.querySelector('body');
+                    Polymer.dom(body).appendChild(this.$.editUserDialog);
+                    this.$.editUserDialog.open();
+
+                    this.selectedUser = this.selectedUsers[0];
+
+                    if (this.selectedUser.role === 'manager') {
+                        this.isManager = true;
+                        this.managedSchools = this.selectedUser.manager.schools.slice(0);
+                    }
+                }
+            }
+
+            _dismissEditUserDialog() {
+                this.selectedUsers = [];
+                this.isManager = false;
+                this.managedSchools = [];
+                this.$.usersGrid.clearCache();
+                this.$.editUserDialog.close();
+            }
+
+            _confirmEditUserDialog() {
+
+                var oldSchools = this.selectedUser.role === 'manager' ? this.selectedUser.manager.schools : [];
+                var newSchools = this.managedSchools;
+
+                console.log(oldSchools);
+                console.log(newSchools);
+
+                var schoolsToRemove = [];
+                var schoolsToAdd = [];
+
+                oldSchools.forEach(function (oldSchool) {
+                    if (newSchools.indexOf(oldSchool) === -1) {
+                        // school removed
+                        schoolsToRemove.push(oldSchool);
+                    }
+                }.bind(this));
+
+                newSchools.forEach(function (newSchool) {
+                    if (oldSchools.indexOf(newSchool) === -1) {
+                        // school added
+                        schoolsToAdd.push(newSchool);
+                    }
+                }.bind(this));
+
+                // add or remove manager if necessary
+                this._applyIsManagerChanges().then(function () {
+                    var count = schoolsToRemove.length + schoolsToAdd.length;
+
+                    if (count === 0) {
+                        this._dismissEditUserDialog();
+                    }
+
+                    schoolsToRemove.forEach(function (school) {
+                        this.managerApiProvider.removeSchoolFromManager(this.selectedUser.id, school.id).then(function () {
+                            count = count - 1;
+                            if (count === 0) {
+                                this._dismissEditUserDialog();
+                            }
+                        }.bind(this));
+                    }.bind(this));
+
+                    schoolsToAdd.forEach(function (school) {
+                        this.managerApiProvider.addSchoolToManager(this.selectedUser.id, school.id).then(function () {
+                            count = count - 1;
+                            if (count === 0) {
+                                this._dismissEditUserDialog();
+                            }
+                        }.bind(this));
+                    }.bind(this));
+
+                }.bind(this), function () {
+                    this._dismissEditUsersDialog();
+                }.bind(this));
+            }
+
+            _applyIsManagerChanges() {
+                return new Promise(function (resolve, reject) {
+                    if (this.selectedUser.role === 'manager') {
+                        if (this.isManager === false) {
+                            // delete manager
+                            this.managerApiProvider.deleteManager(this.selectedUser.id).then(function () {
+                                reject();
+                            }.bind(this));
+                        } else {
+                            // add / remove schools
+                            resolve();
+                        }
+                    } else {
+                        if (this.isManager === true) {
+                            // add manager
+                            this.managerApiProvider.addManager(this.selectedUser.id).then(function (response) {
+                                // add / remove schools
+                                resolve();
+                            }.bind(this));
+                        }
+                    }
+                }.bind(this));
+            }
+
+            _removeSchoolFromManagedSchools(event) {
+                //var school = JSON.parse(event.srcElement.attributes.value.nodeValue);
+                var school = event.detail.item;
+                this.splice('managedSchools', this.managedSchools.indexOf(school), 1);
+            }
+
+            _deleteSelectedUsers() {
+                var count = this.selectedUsers.length;
+
+                this.selectedUsers.forEach(function (user) {
+
+                    this.userApiProvider.deleteUser(user.id).then(function () {
+                        count = count - 1;
+
+                        if (count === 0) {
+                            this.selectedUsers = [];
+                            this.$.usersGrid.clearCache();
+                        }
+                    }.bind(this));
+                }.bind(this));
+            }
+
+            _editUserVisible(selectedUserLength) {
+                return selectedUserLength !== 1;
+            }
+        }
+
+        customElements.define(ScheduleAdminViewUsers.is, ScheduleAdminViewUsers);
+    </script>
+</dom-module>

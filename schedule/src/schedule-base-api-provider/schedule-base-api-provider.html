@@ -1,0 +1,149 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+
+<dom-module id="schedule-base-api-provider">
+
+    <script>
+        /**
+         * @customElement
+         * @polymer
+         */
+        class ScheduleBaseApiProvider extends Polymer.Element {
+            static get is() {
+                return 'schedule-base-api-provider';
+            }
+
+            static get properties() {
+                return {
+                    basePath: {
+                        // overwritten by config
+                        type: String,
+                        value: '../../api/public/index.php'
+                    }
+                };
+            }
+
+            static get observers() {
+                return []
+            }
+
+            ready() {
+                super.ready();
+
+                //console.log(this.newApiRequest({method: 'GET', path: '/v1/mulm'}));
+            }
+
+            test() {
+                console.log('test')
+            }
+
+            generateTargetURL(path, customBasePath = false) {
+
+                if (window.ScheduleConfig !== undefined) {
+                    this.basePath = window.ScheduleConfig.apiBasePath;
+                }
+
+                return customBasePath !== false ? customBasePath + path : this.basePath + path;
+            }
+
+            generateAjaxRequest(options, customBasePath = false) {
+                var method = options.method !== undefined ? options.method : undefined;
+                var path = options.path !== undefined ? options.path : undefined;
+                var params = options.params !== undefined ? options.params : {};
+                var body = options.body !== undefined ? options.body : null;
+
+                if (method === undefined) {
+                    console.warn('request method undefined');
+                }
+
+                if (path === undefined) {
+                    console.warn('request path undefined');
+                }
+
+                function formatParams(params) {
+                    return '?' + Object.keys(params).map(function (key) {
+                                return key + '=' + encodeURIComponent(params[key])
+                            }).join('&')
+                }
+
+                return new Promise(function (resolve, reject) {
+                    var request = new XMLHttpRequest();
+
+                    // open request
+                    request.open(method, this.generateTargetURL(path, customBasePath) + formatParams(params));
+
+                    // set request headers
+                    request.setRequestHeader("Content-Type", "application/json");
+                    // set response type
+                    request.responseType = 'json';
+
+                    // request onload
+                    request.onload = function () {
+                        // this is called even on 404 etc so check the status
+                        if (request.status === 200) {
+                            // resolve the promise with the response text
+                            resolve(request.response);
+                        } else if(request.status === 401) {
+                            // unauthorized
+                            this.dispatchEvent(new CustomEvent('error', {
+                                bubbles: true,
+                                composed: true,
+                                detail: {error: {status: 401, statusText: 'Unauthorized'}}
+                            }));
+                        } else {
+                            // Otherwise reject with the status text
+                            // which will hopefully be a meaningful error
+                            reject(Error(request));
+                        }
+                    }.bind(this);
+
+
+                    // handle network errors
+                    request.onerror = function () {
+                        reject(Error('network error'));
+                    };
+
+                    // make the request
+                    request.send(JSON.stringify(body));
+
+                }.bind(this));
+            }
+
+            handleError(request) {
+                console.log(error);
+            }
+
+
+            generateIronAjaxRequest(url, params, body, method) {
+                // TODO: method deprecated -> remove
+
+                return new Promise(function (resolve, reject) {
+
+                    delete this.$.ajax.url;
+                    delete this.$.ajax.method;
+
+                    delete this.$.ajax.params;
+                    delete this.$.ajax.body;
+
+                    this.$.ajax.addEventListener('response', function (event) {
+                        resolve(event)
+                    });
+
+                    this.$.ajax.addEventListener('error', function (event) {
+                        reject(event);
+                    });
+
+
+                    this.$.ajax.url = this.basePath + url;
+                    this.$.ajax.method = method;
+
+                    this.$.ajax.params = params;
+                    this.$.ajax.body = body;
+
+
+                }.bind(this));
+            }
+        }
+
+        customElements.define(ScheduleBaseApiProvider.is, ScheduleBaseApiProvider);
+    </script>
+</dom-module>

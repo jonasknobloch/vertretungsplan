@@ -1,0 +1,200 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+
+<link rel="import" href="../schedule-shared-styles/schedule-shared-styles.html">
+
+<link rel="import" href="../schedule-api-providers/schedule-admin-api-provider.html">
+<link rel="import" href="../schedule-api-providers/schedule-user-api-provider.html">
+
+<dom-module id="schedule-admin-view-admins">
+
+    <template>
+
+        <style include="schedule-shared-styles">
+
+        </style>
+
+        <vaadin-grid-material-card
+                id="adminsGrid"
+                api-provider="[[adminApiProvider]]"
+                provider-method="getAdmins"
+                selected-items="{{selectedAdmins}}"
+                title="Admins"
+                page-size="10">
+
+            <paper-icon-button slot="button" icon="icons:delete" on-tap="_deleteSelectedAdmins"></paper-icon-button>
+
+            <vaadin-grid-column>
+                <template class="header">
+                    <vaadin-grid-sorter path="SSO ID">
+                        <div class="cell">
+                            <span>SSO ID</span>
+                            <iron-icon icon="icons:arrow-upward"></iron-icon>
+                        </div>
+                    </vaadin-grid-sorter>
+                </template>
+                <template>
+                    <div class="cell">[[item.user_id]]</div>
+                </template>
+            </vaadin-grid-column>
+
+            <vaadin-grid-column>
+                <template class="header">
+                    <vaadin-grid-sorter path="first_name">
+                        <div class="cell">
+                            <span>First Name</span>
+                            <iron-icon icon="icons:arrow-upward"></iron-icon>
+                        </div>
+                    </vaadin-grid-sorter>
+                </template>
+                <template>
+                    <div class="cell">[[item.first_name]]</div>
+                </template>
+            </vaadin-grid-column>
+
+            <vaadin-grid-column>
+                <template class="header">
+                    <vaadin-grid-sorter path="last_name">
+                        <div class="cell">
+                            <span>Last Name</span>
+                            <iron-icon icon="icons:arrow-upward"></iron-icon>
+                        </div>
+                    </vaadin-grid-sorter>
+                </template>
+                <template>
+                    <div class="cell">[[item.last_name]]</div>
+                </template>
+            </vaadin-grid-column>
+
+            <vaadin-grid-column>
+                <template class="header">
+                    <vaadin-grid-sorter path="name">
+                        <div class="cell last">
+                            <span>Email</span>
+                            <iron-icon icon="icons:arrow-upward"></iron-icon>
+                        </div>
+                    </vaadin-grid-sorter>
+                </template>
+                <template>
+                    <div class="cell last">[[item.email]]</div>
+                </template>
+            </vaadin-grid-column>
+
+        </vaadin-grid-material-card>
+
+        <paper-fab icon="add" on-tap="openAddAdminDialog"></paper-fab>
+
+        <paper-dialog id="addAdminDialog" modal>
+            <h2>Add Admin</h2>
+
+            <vaadin-combo-box
+                    id="selectUser"
+                    label="User"
+                    items="[[users]]"
+                    item-value-path="id"
+                    item-label-path="id"
+                    name="user_id"
+                    selected-item="{{selectedUser}}"
+                    autofocus>
+                <template>
+                    <paper-item>[[item.first_name]] [[item.last_name]]</paper-item>
+                </template>
+            </vaadin-combo-box>
+
+            <br>
+
+            <div class="buttons">
+                <paper-button on-tap="_dismissAddAdminDialog">Cancel</paper-button>
+                <paper-button on-tap="_confirmAddAdminDialog">Accept</paper-button>
+            </div>
+        </paper-dialog>
+
+
+        <schedule-admin-api-provider id="adminApiProvider"></schedule-admin-api-provider>
+        <schedule-user-api-provider id="userApiProvider"></schedule-user-api-provider>
+    </template>
+
+    <script>
+        /**
+         * @customElement
+         * @polymer
+         */
+        class ScheduleAdminViewAdmins extends Polymer.Element {
+            static get is() {
+                return 'schedule-admin-view-admins';
+            }
+
+            static get properties() {
+                return {};
+            }
+
+            static get observers() {
+                return []
+            }
+
+            ready() {
+                super.ready();
+
+                this.baseApiProvider = new ScheduleBaseApiProvider();
+                this.adminApiProvider = this.$.adminApiProvider;
+                this.userApiProvider = this.$.userApiProvider;
+
+                this.userApiProvider.getUsers().then(function (response) {
+                    this.users = response;
+                }.bind(this));
+            }
+
+            openAddAdminDialog() {
+                // https://stackoverflow.com/questions/31394305/polymer-1-x-modal-paper-dialog-appears-behind-its-backdrop
+                // https://github.com/PolymerElements/paper-dialog/issues/7
+
+                var body = document.querySelector('body');
+                Polymer.dom(body).appendChild(this.$.addAdminDialog);
+                this.$.addAdminDialog.open();
+            }
+
+            _confirmAddAdminDialog() {
+                if (this.selectedUser) {
+                    this.adminApiProvider.addAdmin(this.selectedUser.id).then(function () {
+                        this.$.adminsGrid.clearCache();
+                        this._dismissAddAdminDialog();
+                    }.bind(this));
+                } else {
+                    // TODO: user required
+                }
+            }
+
+            _dismissAddAdminDialog() {
+                this.selectedUser = null;
+                this.$.addAdminDialog.close();
+            }
+
+            _deleteSelectedAdmins() {
+                var count = this.selectedAdmins.length;
+
+                this.selectedAdmins.forEach(function (admin) {
+                    console.log(admin);
+
+                    this.adminApiProvider.deleteAdmin(admin.user_id).then(function () {
+                        count = count - 1;
+
+                        if (count === 0) {
+                            this.selectedAdmins = [];
+                            this.$.adminsGrid.clearCache();
+                        }
+                    }.bind(this));
+                }.bind(this));
+            }
+
+            test() {
+                var mulm = JSON.stringify([1, 2, 3]);
+
+                this.$.deleteAdmins.setAttribute('params', mulm);
+                this.$.deleteAdmins.generateRequest();
+            }
+        }
+
+        customElements.define(ScheduleAdminViewAdmins.is, ScheduleAdminViewAdmins);
+    </script>
+</dom-module>

@@ -1,0 +1,40 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../schedule-base-api-provider/schedule-base-api-provider.html">
+
+<dom-module id="schedule-change-api-provider">
+    <script>
+        /**
+         * @customElement
+         * @polymer
+         */
+        class ScheduleChangeApiProvider extends ScheduleBaseApiProvider {
+            static get is() {
+                return 'schedule-change-api-provider';
+            }
+
+            static get properties() {
+                return {
+                    key: Number
+                };
+            }
+
+            getChanges() {
+                return new Promise(function (resolve) {
+                    this.generateAjaxRequest({method: 'GET', path: '/v1/changes/'+this.key}).then(function (response) {
+                        resolve(response);
+                    }.bind(this));
+                }.bind(this));
+            }
+
+            deleteChangeByDate(date) {
+                return new Promise(function (resolve) {
+                    this.generateAjaxRequest({method: 'DELETE', path: '/v1/changes/'+this.key+'/'+date}).then(function (response) {
+                        resolve(response);
+                    }.bind(this))
+                }.bind(this))
+            }
+        }
+
+        customElements.define(ScheduleChangeApiProvider.is, ScheduleChangeApiProvider);
+    </script>
+</dom-module>

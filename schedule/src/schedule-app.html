@@ -1,0 +1,105 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+
+<!--<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">-->
+<link rel="import" href="../bower_components/iron-pages/iron-pages.html">
+
+<link rel="import" href="../bower_components/paper-spinner/paper-spinner.html">
+
+<link rel="import" href="../src/schedule-base-api-provider/schedule-base-api-provider.html">
+
+<dom-module id="schedule-app">
+
+    <template>
+        <schedule-base-api-provider id="baseApiProvider"></schedule-base-api-provider>
+
+        <iron-pages selected="[[page]]"
+                    attr-for-selected="id"
+                    fallback-selection="error">
+
+            <div id="loading">Loading...</div>
+
+            <schedule-student-view id="student" user="[[user]]"></schedule-student-view>
+            <schedule-manager-view id="manager" user="[[user]]"></schedule-manager-view>
+            <schedule-admin-view id="admin" user="[[user]]"></schedule-admin-view>
+            <schedule-error-view id="error" error="[[error]]"></schedule-error-view>
+            <schedule-advertisement-view id="advertisement">advertisement view</schedule-advertisement-view>
+
+        </iron-pages>
+    </template>
+
+    <script>
+        /**
+         * @customElement
+         * @polymer
+         */
+        class ScheduleApp extends Polymer.Element {
+            static get is() {
+                return 'schedule-app';
+            }
+
+            static get properties() {
+                return {
+                    page: {
+                        type: String,
+                        value: 'loading'
+                    },
+                    user: {
+                        type: Object,
+                    }
+                };
+            }
+
+            static get observers() {
+                return []
+            }
+
+            ready() {
+                super.ready();
+
+                this.baseApiProvider = this.$.baseApiProvider;
+
+                this.baseApiProvider.generateAjaxRequest({method: 'GET', path: 'schedule.json'}, '').then(function (config) {
+                    // TODO: whole application needs to wait for config -> better way?
+                    window.ScheduleConfig = config;
+
+                    this.baseApiProvider.generateAjaxRequest({method: 'GET', path: '/v1/status'}).then(function (response) {
+                        this.user = response.user;
+
+                        if (this.user.role === 'student' && this.user.student.schools.length === 0) {
+                            this.changeView('advertisement');
+                        } else if(this.user.role === 'staff') {
+                            this.error = {
+                                status: 403,
+                                statusText: 'Forbidden',
+                                description: 'Sie besitzen nicht die notwendige Berechtigung um den von Ihnen aufgerufenen Dienst zu nutzen.'
+                            };
+                            this.changeView('error');
+                        } else {
+                            this.changeView(this.user.role);
+                        }
+
+                    }.bind(this));
+
+                    this.shadowRoot.addEventListener('error', function (event) {
+                        console.log(event);
+                        this.error = event.detail.error;
+                        this.changeView('error');
+                    }.bind(this))
+                }.bind(this));
+            }
+
+            handleError(event) {
+                console.log(event.detail.error.message);
+            }
+
+            changeView(role) {
+                var resolvedPageUrl = this.resolveUrl('schedule-'+role+'-view/schedule-'+role+'-view.html');
+                Polymer.importHref(resolvedPageUrl, null, this.handleError, true);
+
+                this.page = role;
+            }
+        }
+
+        customElements.define(ScheduleApp.is, ScheduleApp);
+    </script>
+</dom-module>

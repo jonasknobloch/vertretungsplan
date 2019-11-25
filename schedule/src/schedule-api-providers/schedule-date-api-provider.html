@@ -1,0 +1,32 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../schedule-base-api-provider/schedule-base-api-provider.html">
+
+<dom-module id="schedule-date-api-provider">
+    <script>
+        /**
+         * @customElement
+         * @polymer
+         */
+        class ScheduleDateApiProvider extends ScheduleBaseApiProvider {
+            static get is() {
+                return 'schedule-date-api-provider';
+            }
+
+            static get properties() {
+                return {
+
+                };
+            }
+
+            getSchoolDatesByRange(range) {
+                return new Promise(function (resolve) {
+                    this.generateAjaxRequest({method: 'GET', path: '/v1/dates', params:{range:range}}).then(function (response) {
+                        resolve(response);
+                    }.bind(this));
+                }.bind(this));
+            }
+        }
+
+        customElements.define(ScheduleDateApiProvider.is, ScheduleDateApiProvider);
+    </script>
+</dom-module>

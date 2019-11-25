@@ -1,0 +1,245 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+
+<link rel="import" href="../schedule-base-api-provider/schedule-base-api-provider.html">
+
+<dom-module id="vaadin-grid-material-card-data-provider">
+
+    <template>
+    </template>
+
+    <script>
+        /**
+         * @customElement
+         * @polymer
+         */
+        class vaadinGridMaterialCardDataProvider extends Polymer.Element {
+            static get is() {
+                return 'vaadin-grid-material-card-data-provider';
+            }
+
+            static get properties() {
+                return {
+                    loading: {
+                        type: Boolean,
+                        notify: true
+                    },
+
+                    delay: {
+                        type: Number,
+                        value: 0
+                    },
+
+                    data: {
+                        type: Array,
+                        notify: true
+                    },
+
+                    dataSource: {
+                        type: String,
+                    },
+
+                    items: {
+                        type: Array
+                    },
+
+                    page: {
+                        type: Number,
+                        value: 0
+                    },
+
+                    pageSize: {
+                        type: Number,
+                        value: 5,
+                    },
+
+                    pageStart: {
+                        type: Number,
+                        notify: true
+                    },
+
+                    pageEnd: {
+                        type: Number,
+                        notify: true
+                    },
+
+                    visibleItems: {
+                        type: Array,
+                        notify: true
+                    },
+
+                    filters: {
+                        type: Array
+                    },
+
+                    sortOrders: {
+                        type: Array
+                    },
+
+                    relations: Array,
+                    apiProvider: Object,
+                    providerMethod: String,
+
+                    dataProvider: {
+                        notify: true,
+                        value: function () {
+                            return function (params, callback) {
+
+                                //console.log(params.filters[0]);
+
+                                this.loading = true;
+                                setTimeout(function () {
+
+                                    this.utilizeCache().then(function () {
+                                        //TODO: filter first for better performance -> watch out for sortOrder reset!
+
+                                        if (!params.sortOrders.equals(this.sortOrders)) {
+                                            this.applySortOrders(params.sortOrders);
+                                        }
+
+                                        if (!params.filters.equals(this.filters)) {
+                                            this.applyFilters(params.filters);
+                                        }
+
+                                        this.visibleItems = this.applyPagination(this.items);
+
+                                        callback(this.visibleItems);
+                                        this.loading = false;
+                                    }.bind(this));
+                                }.bind(this), this.delay);
+                            }.bind(this)
+                        }
+                    }
+                };
+            }
+
+            static get observers() {
+                return []
+            }
+
+            utilizeCache() {
+                return new Promise(function (resolve) {
+                    if (this.data !== undefined && this.data.length > 0) {
+                        resolve();
+                    } else {
+                        this.apiProvider[this.providerMethod](this.relations).then(function (response) {
+                            this.items = response;
+                            this.data = response;
+
+                            resolve();
+                        }.bind(this));
+                    }
+                }.bind(this));
+            }
+
+            applyFilters(filters) {
+                //cache filters
+                this.filters = filters;
+
+                if (filters.length > 0) {
+                    if (filters[0].value === null) {
+                        // setting filter to null to avoid performance cost by filtering with an empty string
+                        this.items = this.data.slice(0);
+                    } else {
+                        //console.log('filter');
+                        this.items = this.data.slice(0);
+
+                        this.items =  this.items.filter(function (obj) {
+
+                            var substring = filters[0].value;
+
+                            var propertyNames = Object.getOwnPropertyNames(obj);
+
+                            for (var i = 0; i < propertyNames.length; i++) {
+                                var property = propertyNames[i];
+
+                                if (obj[property] && obj[property].toString().includes(substring)) {
+                                    //console.log(obj[property].toString());
+                                    return true;
+                                }
+                            }
+
+                            return false;
+                        });
+                    }
+                }
+            }
+
+            applySortOrders(sortOrders) {
+                // TODO: asc / desc
+                // TODO: variable path to value
+                // TODO: multisort
+
+                //cache sortOrders
+                this.sortOrders = sortOrders;
+
+                if (sortOrders.length > 0) {
+                    var path = sortOrders[0].path;
+                    var direction = sortOrders[0].direction;
+
+                    this.items.sort(function (a, b) {
+                        return (a[path] > b[path]) ? 1 : ((b[path] > a[path]) ? -1 : 0);
+                    });
+
+                    if (direction === 'desc') {
+                        this.items.reverse();
+                    }
+                } else {
+                    this.items = this.data.slice(0);
+                }
+            }
+
+            applyPagination(items) {
+                var page = this.page;
+                var pageSize = parseInt(this.pageSize, 10);
+
+                //console.log('Page: ' + page + ' Size: ' + pageSize);
+
+                var start = page * pageSize;
+                var end = start + pageSize;
+
+                if (end > this.data.length) {
+                    end = this.data.length;
+                }
+
+                this.pageStart = start + 1;
+                this.pageEnd = end;
+
+                //console.log((start + 1) + ' ' + end);
+
+                return items.slice(start, end);
+                // TODO: modify size if returned array length does not fit
+            }
+
+        }
+
+        customElements.define(vaadinGridMaterialCardDataProvider.is, vaadinGridMaterialCardDataProvider);
+
+        // attach the .equals method to Array's prototype to call it on any array
+        Array.prototype.equals = function (array) {
+            // if the other array is a falsy value, return
+            if (!array)
+                return false;
+
+            // compare lengths - can save a lot of time
+            if (this.length !== array.length)
+                return false;
+
+            for (var i = 0, l=this.length; i < l; i++) {
+                // Check if we have nested arrays
+                if (this[i] instanceof Array && array[i] instanceof Array) {
+                    // recurse into the nested arrays
+                    if (!this[i].equals(array[i]))
+                        return false;
+                }
+                else if (this[i] !== array[i]) {
+                    // Warning - two different object instances will never be equal: {x:20} != {x:20}
+                    return false;
+                }
+            }
+            return true;
+        };
+
+        // Hide method from for-in loops
+        Object.defineProperty(Array.prototype, 'equals', {enumerable: false});
+    </script>
+</dom-module>

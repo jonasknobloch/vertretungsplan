@@ -1,0 +1,117 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/iron-form/iron-form.html">
+<link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
+
+<dom-module id="schedule-form-dialog">
+    <template>
+        <style>
+            :host {
+                display: block;
+            }
+
+            paper-dialog {
+                width: 350px;
+            }
+
+            iron-form {
+                margin-top: 24px;
+                margin-bottom: 24px;
+            }
+
+        </style>
+        <paper-dialog id="dialog" modal>
+            <h2>[[heading]]</h2>
+
+            <iron-form
+                    id="form"
+                    on-iron-form-submit="_handleFormSubmit"
+                    on-iron-form-response="_handleFormResponse"
+                    on-iron-form-error="_handleFormError">
+
+                <slot></slot>
+
+            </iron-form>
+
+            <div class="buttons">
+                <paper-button on-tap="_dismissDialog">Cancel</paper-button>
+                <paper-button on-tap="_confirmDialog">Accept</paper-button>
+            </div>
+        </paper-dialog>
+
+    </template>
+
+    <script>
+        /**
+         * @customElement
+         * @polymer
+         */
+        class ScheduleFormDialog extends Polymer.Element {
+            static get is() {
+                return 'schedule-form-dialog';
+            }
+
+            static get properties() {
+                return {
+                    heading: {
+                        type: String
+                    }
+                };
+            }
+
+            static get observers() {
+                return []
+            }
+
+            open() {
+                this.$.dialog.open();
+            }
+
+            _confirmDialog() {
+                this.$.form.submit();
+            }
+
+            _dismissDialog() {
+                this.$.form.reset();
+                this.$.dialog.close();
+            }
+
+            _handleFormSubmit(event) {
+                console.log('submit');
+                console.log('event');
+            }
+
+            _handleFormResponse (event) {
+                console.log('response');
+
+                var status = event.detail.__data.status;
+                var statusText = event.detail.__data.statusText;
+
+                var response = event.detail.__data.response;
+
+                console.log(status, statusText, response);
+
+                if (status === 200) {
+                    this.dispatchEvent(new CustomEvent('form-submit-successful', {detail: {response: response}}));
+
+                    this.$.form.reset();
+                    this.$.dialog.close();
+                }
+            }
+
+            _handleFormError(event) {
+                console.log('error');
+
+                var status = event.detail.request.__data.status;
+                var statusText = event.detail.request.__data.statusText;
+
+                var response = event.detail.request.__data.response;
+
+                console.log(status, statusText, response);
+
+                this.dispatchEvent(new CustomEvent('form-submit-failed', {detail: {response: response}}));
+            }
+        }
+
+        customElements.define(ScheduleFormDialog.is, ScheduleFormDialog);
+    </script>
+</dom-module>

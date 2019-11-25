@@ -1,0 +1,124 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+
+<dom-module id="schedule-error-view">
+
+    <template>
+        <style>
+            :host {
+                display: block;
+                height: 100vh;
+                line-height: 1;
+            }
+
+            h1 {
+                font-size: 8vw;
+                color: #212121;
+            }
+
+            p {
+                font-size: 4vw;
+                color: #757575;
+            }
+
+            .flex-container {
+                height: 85%;
+                padding: 0;
+                margin: 0;
+                display: -webkit-box;
+                display: -moz-box;
+                display: -ms-flexbox;
+                display: -webkit-flex;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .content-container {
+                max-width: 75%;
+            }
+
+            paper-button {
+                margin: 0;
+
+                color: #ffffff;
+                background-color: #2196F3;
+            }
+
+            paper-button[disabled] {
+                background-color: #E0E0E0;
+            }
+
+            a {
+                text-underline: none;
+                color: #ffffff;
+            }
+        </style>
+
+
+        <div class="flex-container">
+            <div class="content-container">
+                <h1>[[error.status]] [[error.statusText]]</h1>
+                <p>[[error.description]]</p>
+                <paper-button raised on-tap="_redirect">anmelden</paper-button>
+            </div>
+        </div>
+
+
+    </template>
+
+    <script>
+        /**
+         * @customElement
+         * @polymer
+         */
+        class ScheduleErrorView extends Polymer.Element {
+            static get is() {
+                return 'schedule-error-view';
+            }
+
+            static get properties() {
+                return {
+                    error: {
+                        type: Object,
+                        value: {
+                            status: 418,
+                            statusText: 'I\'m a teapot',
+                            description: 'You can\'t brew coffee using a teapot.',
+                            debug: null
+                        },
+                        observer: '_errorChanged'
+                    },
+                };
+            }
+
+            static get observers() {
+                return []
+            }
+
+            _errorChanged(error) {
+
+                // custom error handling
+
+                if (error.status === 401) {
+
+                    this.error.description = 'Aktuelle Sitzung abgelaufen. Bitte erneut anmelden.';
+                    this.notifyPath('error.description');
+
+
+                } else if (error.status === 404) {
+
+                    this.error.description = 'Die angeforderte Ressource ist nicht verfügbar.';
+                    this.notifyPath('error.description');
+
+                }
+            }
+
+            _redirect(event) {
+                window.location = 'https://schullogin.de/p/sbs.singlesignon/application/startapplication?applicationName=vplan';
+            }
+        }
+
+        customElements.define(ScheduleErrorView.is, ScheduleErrorView);
+    </script>
+</dom-module>

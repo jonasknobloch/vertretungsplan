@@ -1,0 +1,41 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../schedule-base-api-provider/schedule-base-api-provider.html">
+
+<dom-module id="schedule-student-api-provider">
+    <script>
+        /**
+         * @customElement
+         * @polymer
+         */
+        class ScheduleStudentApiProvider extends ScheduleBaseApiProvider {
+            static get is() {
+                return 'schedule-student-api-provider';
+            }
+
+            static get properties() {
+                return {
+                    schoolId: Number,
+                    userId: String
+                };
+            }
+
+            addLesson(subject, teacher, group) {
+                return new Promise(function (resolve) {
+                    this.generateAjaxRequest({method: 'POST', path: '/v1/students/'+this.userId+'/schools/'+this.schoolId+'/lessons', body:{subject:subject, teacher:teacher, group:group}}).then(function (response) {
+                        resolve(response);
+                    }.bind(this));
+                }.bind(this));
+            }
+
+            deleteLesson(id) {
+                return new Promise(function (resolve) {
+                    this.generateAjaxRequest({method: 'DELETE', path: '/v1/students/'+this.userId+'/schools/'+this.schoolId+'/lessons/'+id}).then(function (response) {
+                        resolve(response);
+                    }.bind(this));
+                }.bind(this));
+            }
+        }
+
+        customElements.define(ScheduleStudentApiProvider.is, ScheduleStudentApiProvider);
+    </script>
+</dom-module>

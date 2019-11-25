@@ -1,0 +1,32 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+
+<!-- shared styles for all views -->
+<dom-module id="schedule-shared-styles">
+    <template>
+        <style>
+            :host {
+                /* default values */
+                --app-content-width-max: 960px;
+                --paper-fab-z-index: 106;
+            }
+
+            [hidden] {
+                display: none!important;
+            }
+
+            paper-fab {
+                position: fixed;
+                right: 25px;
+                bottom: 25px;
+                z-index: var(--paper-fab-z-index);
+            }
+
+            vaadin-grid-material-card {
+                width: 100%;
+                max-width: var(--app-content-width-max);
+                margin-top: 32px;
+                margin-bottom: 32px;
+            }
+        </style>
+    </template>
+</dom-module>

@@ -1,0 +1,279 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../../bower_components/paper-fab/paper-fab.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+
+
+<link rel="import" href="../schedule-shared-styles/schedule-shared-styles.html">
+
+<link rel="import" href="../vaadin-grid-material-card/vaadin-grid-material-card.html">
+
+<link rel="import" href="../schedule-api-providers/schedule-school-api-provider.html">
+
+<dom-module id="schedule-admin-view-schools">
+
+    <template>
+
+        <style include="schedule-shared-styles">
+
+        </style>
+
+        <vaadin-grid-material-card
+                id="schoolsGrid"
+                api-provider="[[schoolApiProvider]]"
+                provider-method="getSchools"
+                selected-items="{{selectedSchools}}"
+                title="Schulen"
+                page-size="10">
+
+            <paper-icon-button slot="button" icon="icons:create" on-tap="_editSelectedSchool" hidden="[[_editSchoolVisible(selectedSchools.length)]]"></paper-icon-button>
+            <paper-icon-button slot="button" icon="icons:delete" on-tap="_deleteSelectedSchools"></paper-icon-button>
+
+            <vaadin-grid-column>
+                <template class="header">
+                    <vaadin-grid-sorter path="id">
+                        <div class="cell numeric">
+                            <iron-icon icon="icons:arrow-upward"></iron-icon>
+                            <span>#</span>
+                        </div>
+                    </vaadin-grid-sorter>
+                </template>
+                <template>
+                    <div class="cell numeric">[[item.id]]</div>
+                </template>
+            </vaadin-grid-column>
+
+            <vaadin-grid-column flex-grow="2">
+                <template class="header">
+                    <vaadin-grid-sorter path="name">
+                        <div class="cell">
+                            <span>Name</span>
+                            <iron-icon icon="icons:arrow-upward"></iron-icon>
+                        </div>
+                    </vaadin-grid-sorter>
+                </template>
+                <template>
+                    <div class="cell">[[item.name]]</div>
+                </template>
+            </vaadin-grid-column>
+
+            <vaadin-grid-column>
+                <template class="header">
+                    <vaadin-grid-sorter path="created_at">
+                        <div class="cell">
+                            <span>Created</span>
+                            <iron-icon icon="icons:arrow-upward"></iron-icon>
+                        </div>
+                    </vaadin-grid-sorter>
+                </template>
+                <template>
+                    <div class="cell">[[item.created_at]]</div>
+                </template>
+            </vaadin-grid-column>
+
+            <vaadin-grid-column>
+                <template class="header">
+                    <vaadin-grid-sorter path="updated_at">
+                        <div class="cell last">
+                            <span>Updated</span>
+                            <iron-icon icon="icons:arrow-upward"></iron-icon>
+                        </div>
+                    </vaadin-grid-sorter>
+                </template>
+                <template>
+                    <div class="cell last">[[item.updated_at]]</div>
+                </template>
+            </vaadin-grid-column>
+
+        </vaadin-grid-material-card>
+
+        <paper-fab icon="add" on-tap="openAddSchoolDialog"></paper-fab>
+
+        <!--<schedule-form-dialog id="schoolsDialog" heading="Einrichtung hinzufügen" on-form-submit-successful="_handleAddSchoolFormSubmit">
+            <form method="POST" action="../../../api/public/v1/schools" enctype='application/x-www-form-urlencoded'>
+                <paper-input
+                        slot="form-content"
+                        label="Dienststellenschlüssel"
+                        minlength="7"
+                        maxlength="7"
+                        char-counter
+                        required
+                        autofocus
+                        name="key"></paper-input>
+                <paper-input
+                        slot="form-content"
+                        label="Schulname"
+                        maxlength="255"
+                        char-counter
+                        required
+                        name="name"></paper-input>
+            </form>
+        </schedule-form-dialog>-->
+
+        <paper-dialog id="addSchoolDialog" modal>
+            <h2>Schule hinzufügen</h2>
+
+            <paper-input
+                    label="Dienststellenschlüssel"
+                    minlength="7"
+                    maxlength="7"
+                    value="{{schoolId}}"
+                    char-counter
+                    autofocus></paper-input>
+            <paper-input
+                    label="Schulname"
+                    maxlength="255"
+                    value="{{schoolName}}"
+                    char-counter></paper-input>
+
+            <br>
+
+            <div class="buttons">
+                <paper-button on-tap="_dismissAddSchoolDialog">Cancel</paper-button>
+                <paper-button on-tap="_confirmAddSchoolDialog">Accept</paper-button>
+            </div>
+        </paper-dialog>
+
+        <paper-dialog id="editSchoolDialog" modal>
+            <h2>Schule bearbeiten</h2>
+
+            <paper-input
+                    label="Dienststellenschlüssel"
+                    minlength="7"
+                    maxlength="7"
+                    value="[[editSchoolId]]"
+                    char-counter
+                    disabled></paper-input>
+            <paper-input
+                    label="Schulname"
+                    maxlength="255"
+                    value="{{editSchoolName}}"
+                    char-counter
+                    autofocus></paper-input>
+
+            <br>
+
+            <div class="buttons">
+                <paper-button on-tap="_dismissEditSchoolDialog">Cancel</paper-button>
+                <paper-button on-tap="_confirmEditSchoolDialog">Accept</paper-button>
+            </div>
+        </paper-dialog>
+
+        <schedule-school-api-provider id="schoolApiProvider"></schedule-school-api-provider>
+
+    </template>
+
+    <script>
+        /**
+         * @customElement
+         * @polymer
+         */
+        class ScheduleAdminViewSchools extends Polymer.Element {
+            static get is() {
+                return 'schedule-admin-view-schools';
+            }
+
+            static get properties() {
+                return {
+                };
+            }
+
+            static get observers() {
+                return []
+            }
+
+
+            ready() {
+                super.ready();
+
+                this.schoolApiProvider = this.$.schoolApiProvider;
+            }
+
+            openAddSchoolDialog() {
+                // https://github.com/PolymerElements/paper-dialog/issues/7
+
+                var body = document.querySelector('body');
+                Polymer.dom(body).appendChild(this.$.addSchoolDialog);
+                this.$.addSchoolDialog.open();
+            }
+
+            openEditSchoolDialog() {
+                // https://github.com/PolymerElements/paper-dialog/issues/7
+
+                var body = document.querySelector('body');
+                Polymer.dom(body).appendChild(this.$.editSchoolDialog);
+                this.$.editSchoolDialog.open();
+            }
+
+            _editSchoolVisible(selectedSchoolsLength) {
+                //console.log(selectedSchoolsLength, selectedSchoolsLength !== 1);
+                return selectedSchoolsLength !== 1;
+            }
+
+            /*_handleAddSchoolFormSubmit() {
+                this.$.schoolsGrid.clearCache();
+            }*/
+
+            _confirmAddSchoolDialog() {
+                if (this.schoolId && this.schoolName) {
+                    this.schoolApiProvider.addSchool(this.schoolId, this.schoolName).then(function () {
+                        this.$.schoolsGrid.clearCache();
+                        this._dismissAddSchoolDialog();
+                    }.bind(this));
+                } else {
+                    // TODO: user required
+                }
+            }
+
+            _dismissAddSchoolDialog() {
+                this.schoolId = null;
+                this.schoolName = null;
+                this.$.addSchoolDialog.close();
+            }
+
+            _deleteSelectedSchools() {
+                var count = this.selectedSchools.length;
+
+                this.selectedSchools.forEach(function (school) {
+                    this.schoolApiProvider.deleteSchool(school.id).then(function () {
+                        count = count -1;
+
+                        if (count === 0) {
+                            this.selectedSchools = [];
+                            this.$.schoolsGrid.clearCache();
+                        }
+                    }.bind(this));
+                }.bind(this));
+            }
+
+            _editSelectedSchool() {
+                var selectedSchool = this.selectedSchools[0];
+                this.editSchoolId = selectedSchool.id;
+                this.editSchoolName = selectedSchool.name;
+
+                this.openEditSchoolDialog();
+            }
+
+            _confirmEditSchoolDialog() {
+                if (this.editSchoolId && this.editSchoolName) {
+                    this.schoolApiProvider.editSchool(this.editSchoolId, this.editSchoolName).then(function () {
+                        this.$.schoolsGrid.clearCache();
+                        this._dismissEditSchoolDialog();
+                    }.bind(this));
+                } else {
+                    // TODO: user required
+                }
+            }
+
+            _dismissEditSchoolDialog() {
+                this.editSchoolId = null;
+                this.editSchoolName = null;
+                this.selectedSchools = [];
+                this.$.editSchoolDialog.close();
+            }
+        }
+
+        customElements.define(ScheduleAdminViewSchools.is, ScheduleAdminViewSchools);
+    </script>
+</dom-module>

@@ -1,0 +1,74 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+
+<dom-module id="schedule-advertisement-view">
+
+    <template>
+        <style>
+            :host {
+                display: block;
+                height: 100vh;
+                line-height: 1;
+            }
+
+            h1 {
+                font-size: 8vw;
+                color: #212121;
+            }
+
+            p {
+                font-size: 4vw;
+                color: #757575;
+            }
+
+            .flex-container {
+                height: 85%;
+                padding: 0;
+                margin: 0;
+                display: -webkit-box;
+                display: -moz-box;
+                display: -ms-flexbox;
+                display: -webkit-flex;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .content-container {
+                max-width: 75%;
+            }
+        </style>
+
+
+        <div class="flex-container">
+            <div class="content-container">
+                <h1>Schule nicht gefunden</h1>
+                <p>Der Dienst "Vertretungsplan" ist für deine Schule noch nicht verfügbar.</p>
+            </div>
+        </div>
+
+
+    </template>
+
+    <script>
+        /**
+         * @customElement
+         * @polymer
+         */
+        class ScheduleAdvertisementView extends Polymer.Element {
+            static get is() {
+                return 'schedule-advertisement-view';
+            }
+
+            static get properties() {
+                return {
+                };
+            }
+
+            static get observers() {
+                return []
+            }
+        }
+
+        customElements.define(ScheduleAdvertisementView.is, ScheduleAdvertisementView);
+    </script>
+</dom-module>

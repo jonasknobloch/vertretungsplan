@@ -1,0 +1,149 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../bower_components/paper-menu-button/paper-menu-button.html">
+<link rel="import" href="../../bower_components/paper-listbox/paper-listbox.html">
+<link rel="import" href="../../bower_components/paper-item/paper-item.html">
+
+<!-- Ensure Web Animations polyfill is loaded since neon-animation 2.0 doesn't import it -->
+<link rel="import" href="../../bower_components/neon-animation/web-animations.html">
+
+
+<dom-module id="vaadin-grid-material-card-footer">
+
+    <template>
+
+        <style is="custom-style" include="iron-flex">
+            :host {
+                display: block;
+                background: white;
+                font-size: 12px;
+                color: #757575;
+            }
+
+            :host([hidden]) {
+                display: none !important;
+            }
+
+            :host([selected]) {
+                background: #E3F2FD;
+            }
+
+            .footer-container {
+                height: 56px;
+                width: 100%;
+            }
+
+            .content-container {
+                height: 100%;
+            }
+
+            .page-indicator {
+                margin-left: 32px;
+                margin-right: 32px;
+            }
+
+            .rows {
+                width: 40px;
+                text-align: end;
+            }
+
+            .menu-button {
+                padding: 0;
+                height: 24px;
+                width: 24px;
+            }
+
+            #prev {
+                padding: 0;
+                height: 24px;
+                width: 24px;
+            }
+
+            #next {
+                padding: 0;
+                height: 24px;
+                width: 24px;
+                margin-left: 24px;
+                margin-right: 14px;
+            }
+
+        </style>
+
+        <div class="footer-container">
+            <div class="content-container horizontal layout center">
+                <div class="flex"></div>
+                <div class="text">Zeilen pro Seite:</div>
+                <div class="text rows">[[pageSize]]</div>
+                <paper-menu-button class="menu-button" horizontal-align="right">
+                    <paper-icon-button class="menu-button" icon="arrow-drop-down"
+                                       slot="dropdown-trigger"></paper-icon-button>
+                    <paper-listbox id="menu" slot="dropdown-content" selected="{{pageSize}}"
+                                   attr-for-selected="rows">
+                        <paper-item rows="5">5</paper-item>
+                        <paper-item rows="10">10</paper-item>
+                        <paper-item rows="25">25</paper-item>
+                        <paper-item rows="50">50</paper-item>
+                    </paper-listbox>
+                </paper-menu-button>
+                <div class="text page-indicator">[[pageStart]]-[[pageEnd]] of [[itemCount]]</div>
+                <div>
+                    <paper-icon-button id="prev" on-tap="handlePrev" icon="chevron-left"></paper-icon-button>
+                    <paper-icon-button id="next" on-tap="handleNext" icon="chevron-right"></paper-icon-button>
+                </div>
+            </div>
+        </div>
+
+    </template>
+
+    <script>
+        /**
+         * @customElement
+         * @polymer
+         */
+        class VaadinGridMaterialCardFooter extends Polymer.Element {
+            static get is() {
+                return 'vaadin-grid-material-card-footer';
+            }
+
+            static get properties() {
+                return {
+                    pageSize: {
+                        type: Number,
+                        value: 5,
+                        notify: true
+                    },
+
+                    itemCount: {
+                        type: Number,
+                    },
+
+                    pageStart: {
+                        type: Number,
+                    },
+
+                    pageEnd: {
+                        type: Number,
+                    }
+                };
+            }
+
+            static get observers() {
+                return []
+            }
+
+            handlePrev() {
+                this.dispatchEvent(new CustomEvent('pagination-prev'));
+            }
+
+            handleNext() {
+                this.dispatchEvent(new CustomEvent('pagination-next'));
+            }
+        }
+
+        customElements.define(VaadinGridMaterialCardFooter.is, VaadinGridMaterialCardFooter);
+    </script>
+</dom-module>

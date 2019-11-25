@@ -1,0 +1,295 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+
+<link rel="import" href="../../bower_components/paper-checkbox/paper-checkbox.html">
+
+<link rel="import" href="../../bower_components/vaadin-grid/vaadin-grid.html">
+<link rel="import" href="../../bower_components/vaadin-grid/vaadin-grid-selection-column.html">
+<link rel="import" href="../../bower_components/vaadin-grid/vaadin-grid-sorter.html">
+<link rel="import" href="../../bower_components/vaadin-grid/vaadin-grid-filter.html">
+
+<link rel="import" href="vaadin-grid-material-card-data-provider.html">
+
+<link rel="import" href="vaadin-grid-material-card-header.html">
+<link rel="import" href="vaadin-grid-material-card-footer.html">
+
+<link rel="import" href="vaadin-grid-material-style.html">
+
+
+<dom-module id="vaadin-grid-material-card">
+
+    <template>
+
+        <style is="custom-style" include="vaadin-grid-material">
+
+            :host {
+                display: block;
+
+                --paper-checkbox-unchecked-color: #757575;
+
+            }
+
+            [hidden] {
+                display: none !important;
+            }
+
+            vaadin-grid {
+                height: auto;
+            }
+
+            .grid {
+                width: 100%;
+                background-color: white;
+                box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14),
+                0 1px 5px 0 rgba(0, 0, 0, 0.12),
+                0 3px 1px -2px rgba(0, 0, 0, 0.2);
+            }
+
+        </style>
+
+        <vaadin-grid-material-card-data-provider
+                api-provider="[[apiProvider]]"
+                provider-method="[[providerMethod]]"
+                relations="[[relations]]"
+                data="{{data}}"
+                data-provider="{{dataProvider}}"
+                data-source="[[dataSource]]"
+                visible-items="{{visibleItems}}"
+                page="{{page}}"
+                page-size="{{pageSize}}"
+                page-start="{{pageStart}}"
+                page-end="{{pageEnd}}">
+        </vaadin-grid-material-card-data-provider>
+
+        <div class="grid">
+
+            <vaadin-grid-material-card-header
+                    title="[[title]]"
+                    selected-items="[[selectedItems]]"
+                    filter="{{_filter}}">
+
+                <slot name="button" slot="button"></slot>
+
+            </vaadin-grid-material-card-header>
+
+            <vaadin-grid id="material"
+                         size="{{pageSizeTest}}"
+                         page-size="{{pageSize}}"
+                         selected-items="{{selectedItems}}"
+                         data-provider="{{dataProvider}}">
+
+                <vaadin-grid-selection-column width="66px" flex="0">
+                    <template class="header">
+                        <paper-checkbox checked="{{selectAll}}"></paper-checkbox>
+                    </template>
+                    <template>
+                        <paper-checkbox checked="{{selected}}"></paper-checkbox>
+                    </template>
+                </vaadin-grid-selection-column>
+
+                <vaadin-grid-column hidden>
+                    <vaadin-grid-filter path="mulm" value="[[_filter]]"></vaadin-grid-filter>
+                </vaadin-grid-column>
+
+                <slot></slot>
+
+            </vaadin-grid>
+
+            <vaadin-grid-material-card-footer
+                    page-size="{{pageSize}}"
+                    item-count="[[data.length]]"
+                    page-start="[[pageStart]]"
+                    page-end="[[pageEnd]]"
+                    on-pagination-prev="_prev"
+                    on-pagination-next="_next">
+            </vaadin-grid-material-card-footer>
+        </div>
+
+    </template>
+
+    <script>
+        /**
+         * @customElement
+         * @polymer
+         */
+        class VaadinGridMaterialCard extends Polymer.Element {
+            static get is() {
+                return 'vaadin-grid-material-card';
+            }
+
+            static get properties() {
+                return {
+                    apiProvider: Object,
+                    providerMethod: String,
+
+                    data: {
+                        type: Array,
+                    },
+
+                    dataProvider: {
+                        type: Object,
+                    },
+
+                    dataSource: {
+                        type: String
+                    },
+
+                    page: {
+                        type: Number,
+                        value: 0,
+                        observer: '_pageChanged'
+                    },
+
+                    pageSize: {
+                        type: Number,
+                        notify: true
+                    },
+
+                    pageSizeTest: {
+                        type: Number,
+                        computed: '_computePageSizeTest(visibleItems.length)'
+                    },
+
+                    isSelected: {
+                        type: Boolean,
+                        value: false
+                    },
+                    selectedItems: {
+                        type: Array,
+                        notify: true
+                    },
+                    title: {
+                        type: String,
+                        value: 'vaadin-grid'
+                    },
+
+                    selectAll: {
+                        type: Boolean,
+                        value: false,
+                        observer: '_selectAllChanged'
+                    },
+
+                    suspend: {
+                        type: Boolean,
+                        value: false
+                    },
+
+                    allVisibleItemsSelected: {
+                        type: Boolean,
+                        computed: '_computeAllVisibleItemsSelected(visibleItems, selectedItems.length)',
+                        observer: '_allVisibleItemsSelectedChanged'
+                    },
+                    relations: {
+                        value: Array
+                    }
+                };
+            }
+
+            static get observers() {
+                return [
+                    '_selectedItemsChanged(selectedItems.length)',
+                ]
+            }
+
+            _pageChanged() {
+                Polymer.dom(this.root).querySelector('#material').clearCache();
+            }
+
+            _next() {
+                if ((this.page + 1) * this.pageSize < this.data.length) {
+                    this.page = this.page + 1;
+                }
+            }
+
+            _prev() {
+                this.page = this.page - 1 < 0 ? 0 : this.page - 1;
+            }
+
+            _selectedItemsChanged() {
+                this.isSelected = this.selectedItems.length > 0;
+            }
+
+            _computeAllVisibleItemsSelected(visibleItems) {
+
+                var selectedItems = this.selectedItems;
+
+
+                if (selectedItems !== undefined && visibleItems !== undefined && visibleItems.length > 0) {
+                    for (var i = 0; i < visibleItems.length; i++) {
+                        if (selectedItems.indexOf(visibleItems[i]) === -1) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+                return false;
+            }
+
+            _allVisibleItemsSelectedChanged(newVal) {
+                if (newVal !== this.selectAll) {
+                    this.suspend = true;
+                    this.selectAll = !this.selectAll;
+                    this.suspend = false;
+                }
+            }
+
+
+            _computePageSizeTest(length) {
+                return length;
+            }
+
+            _selectAllChanged() {
+
+                if (this.visibleItems !== undefined && this.selectedItems !== undefined && !this.suspend) {
+                    this.toggleAllVisible();
+                }
+            }
+
+            toggleAllVisible() {
+
+                var missingElements = this.findMissingArrayElements(this.visibleItems, this.selectedItems);
+
+                // TODO: performance -> array modifications vs selectItem / deselectItem loop
+
+                if (missingElements.length > 0) {
+
+                    this.selectedItems = this.selectedItems.concat(missingElements);
+
+                } else {
+
+                    var selectedItems = [];
+
+                    for (var i = 0; i < this.selectedItems.length; i++) {
+                        if (this.visibleItems.indexOf(this.selectedItems[i]) === -1) {
+                            selectedItems.push(this.selectedItems[i]);
+                        }
+                    }
+
+                    this.selectedItems = selectedItems;
+
+                }
+
+
+            }
+
+            findMissingArrayElements(needle, haystack) {
+                var missingElements = [];
+
+                for (var i = 0; i < needle.length; i++) {
+                    if (haystack.indexOf(needle[i]) === -1) {
+                        missingElements.push(needle[i]);
+                        //this.$.material.selectItem(needle[i]);
+                    }
+                }
+
+                return missingElements;
+            }
+
+            clearCache() {
+                this.data = [];
+                Polymer.dom(this.root).querySelector('#material').clearCache();
+            }
+        }
+
+        customElements.define(VaadinGridMaterialCard.is, VaadinGridMaterialCard);
+    </script>
+</dom-module>

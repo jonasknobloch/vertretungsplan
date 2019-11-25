@@ -1,0 +1,35 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+
+<dom-module id="vaadin-grid-material-card-column">
+
+    <template>
+        <div>[[foo]]</div>
+    </template>
+
+    <script>
+        /**
+         * @customElement
+         * @polymer
+         */
+        class VaadinGridMaterialCardColumn extends Polymer.Element {
+            static get is() {
+                return 'vaadin-grid-material-card-column';
+            }
+
+            static get properties() {
+                return {
+                    foo: {
+                        type: String,
+                        value: 'bar'
+                    }
+                };
+            }
+
+            static get observers() {
+                return []
+            }
+        }
+
+        customElements.define(VaadinGridMaterialCardColumn.is, VaadinGridMaterialCardColumn);
+    </script>
+</dom-module>

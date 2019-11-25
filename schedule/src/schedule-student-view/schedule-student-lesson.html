@@ -1,0 +1,223 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../../bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="../../bower_components/paper-card/paper-card.html">
+
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../bower_components/paper-item/paper-icon-item.html">
+
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/social-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/communication-icons.html">
+
+<dom-module id="schedule-student-lesson">
+    <template>
+        <style include="iron-flex">
+
+            :host {
+                --card-color: white;
+            }
+
+            [hidden] {
+                display: none!important;
+            }
+
+            .lesson {
+                --paper-item-min-height: 32px;
+                color: var(--paper-grey-800);
+            }
+
+            .index {
+                font-size: 24px;
+                width: 48px
+            }
+
+            paper-card {
+                width: 100%;
+                background-color: var(--card-color);
+            }
+
+            iron-selector > * {
+                padding: 8px;
+            }
+
+            .iron-selected {
+                background-color: var(--paper-grey-800);;
+                color: white;
+                border-radius: 5px;
+            }
+
+            .options {
+                margin-top: 16px;
+            }
+
+            .more {
+                margin-top: -8px;
+                margin-right: -8px;
+            }
+
+            .favourite {
+                margin-right: -8px;
+            }
+        </style>
+
+        <paper-card class="lesson">
+            <div class="card-content">
+                <div class="vertical layout">
+                    <div class="horizontal layout">
+                        <div class="index">#[[data.index]]</div>
+                        <div class="flex vertical layout">
+                            <div class="horizontal layout">
+                                <div class="vertical layout">
+                                    <paper-icon-item><iron-icon slot="item-icon" icon="icons:class"></iron-icon>[[_computeRowData(selectedLesson, 'subject')]]</paper-icon-item>
+                                    <paper-icon-item><iron-icon slot="item-icon" icon="social:person"></iron-icon>[[_computeRowData(selectedLesson, 'teacher')]]</paper-icon-item>
+                                <!--</div>
+                                <div class="vertical layout">-->
+                                    <paper-icon-item><iron-icon slot="item-icon" icon="communication:location-on"></iron-icon>[[_computeRowData(selectedLesson, 'room')]]</paper-icon-item>
+                                    <template is="dom-if" if="[[group]]"><paper-icon-item><iron-icon slot="item-icon" icon="social:group"></iron-icon>[[group]]</paper-icon-item></template>
+                                </div>
+                            </div>
+                            <template is="dom-if" if="[[info]]"><paper-icon-item><iron-icon slot="item-icon" icon="icons:info"></iron-icon>[[info]]</paper-icon-item></template>
+                        </div>
+
+                        <paper-icon-button class="more" icon="more-vert" disabled></paper-icon-button>
+                    </div>
+                    <div class="horizontal layout options" hidden$="[[_optionsHidden]]">
+
+                        <paper-tabs class="flex" selected="{{selectedLesson}}" no-slide no-bar noink scrollable attr-for-selected="lesson" disabled="[[refreshingData]]">
+                            <template is="dom-repeat" items="[[data.lessons]]" id="lessonSelection">
+                                <!-- disabling the whole tab bar at once is not possible so we have to disable the individual tabs -->
+                                <paper-tab lesson="[[item]]" disabled="[[refreshingData]]">[[item.subject]]</paper-tab>
+                            </template>
+                        </paper-tabs>
+
+                        <paper-icon-button class="favourite" icon="[[_computeFavouriteIcon(selectedLesson)]]" on-tap="_toggleFavourite" disabled="[[refreshingData]]"></paper-icon-button>
+
+                    </div>
+                </div>
+            </div>
+        </paper-card>
+    </template>
+
+    <script>
+        /**
+         * @customElement
+         * @polymer
+         */
+        class ScheduleStudentLesson extends Polymer.Element {
+            static get is() {
+                return 'schedule-student-lesson';
+            }
+
+            static get properties() {
+                return {
+                    index: {
+                        type: Number,
+                        value: 1
+                    },
+                    data: {
+                        type: Object,
+                        observer: '_dataChanged'
+                    },
+
+                    _optionsHidden: {
+                        type: Boolean,
+                        value: true
+                    },
+
+                    _favouriteToggleDisabled: {
+                        type: Boolean,
+                        value: false
+                    },
+
+                    selectedLesson: {
+                        type: Object,
+                    },
+
+                    refreshingData: {
+                        type: Boolean
+                    },
+
+                    group: {
+                        type: String,
+                        computed: '_computeRowData(selectedLesson, \'group\')'
+                    },
+
+                    info: {
+                        type: String,
+                        computed: '_computeRowData(selectedLesson, \'info\')'
+                    }
+                };
+            }
+
+            static get observers() {
+                return [
+
+                ]
+            }
+
+            _dataChanged(data) {
+                // performance could be improved by using index for selection to avoid rendering the selection again
+                this.$.lessonSelection.render();
+
+                if (data.lessons.length === 1) {
+                    // only one possible lesson
+                    this.selectedLesson = data.lessons[0];
+                } else if (data.lessons.length > 1) {
+                    // multiple possible lessons
+                    if (data.students_lessons_id) {
+                        this.data.lessons.forEach(function (lesson, index) {
+                            if (this.data.lessons[index].is_favourite) {
+                                this.selectedLesson = lesson;
+                            }
+                        }.bind(this));
+                    } else {
+                        this.selectedLesson = data.lessons[0];
+                    }
+
+                    this._optionsHidden = false;
+                }
+            }
+
+            _computeRowData(selectedLesson, property) {
+                if (selectedLesson.change) {
+                    // TODO: color card
+                    if (selectedLesson.change.subject === '---') {
+                        this.updateStyles({'--card-color': '#EF9A9A'});
+                    } else {
+                        this.updateStyles({'--card-color': '#81D4FA'});
+                    }
+
+                    return selectedLesson.change[property];
+                } else {
+                    this.updateStyles({'--card-color': 'white'});
+                    return selectedLesson[property];
+                }
+            }
+
+            _computeFavouriteIcon(lesson) {
+                return lesson.is_favourite ? 'icons:star' : 'icons:star-border';
+            }
+
+            _toggleFavourite() {
+                console.log(!(this.data.students_lessons_id === null));
+                console.log(!this.selectedLesson.is_favourite);
+
+                var addFavourite = null;
+                var deleteFavourite = this.data.students_lessons_id;
+
+                if (!this.selectedLesson.is_favourite) {
+                    addFavourite = {
+                        subject: this.selectedLesson.subject,
+                        teacher: this.selectedLesson.teacher,
+                        group: this.selectedLesson.group
+                    };
+                }
+
+                this.dispatchEvent(new CustomEvent('favourite-changed', {detail: {addFavourite: addFavourite, deleteFavourite: deleteFavourite}}));
+            }
+        }
+
+        customElements.define(ScheduleStudentLesson.is, ScheduleStudentLesson);
+    </script>
+</dom-module>

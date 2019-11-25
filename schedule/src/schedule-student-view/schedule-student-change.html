@@ -1,0 +1,94 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../../bower_components/paper-card/paper-card.html">
+
+<link rel="import" href="../../bower_components/paper-item/paper-icon-item.html">
+
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/social-icons.html">
+<link rel="import" href="../../bower_components/iron-icons/communication-icons.html">
+
+<dom-module id="schedule-student-change">
+    <template>
+        <style include="iron-flex">
+
+            :host {
+                --card-color: white;
+            }
+
+            [hidden] {
+                display: none!important;
+            }
+
+            .lesson {
+                --paper-item-min-height: 32px;
+                color: var(--paper-grey-800);
+            }
+
+            .index {
+                font-size: 24px;
+                width: 48px
+            }
+
+            paper-card {
+                width: 100%;
+                background-color: var(--card-color);
+            }
+        </style>
+
+        <paper-card class="lesson">
+            <div class="card-content">
+                <div class="vertical layout">
+                    <div class="horizontal layout">
+                        <div class="index">#[[change.index]]</div>
+                        <div class="flex vertical layout">
+                            <div class="horizontal layout">
+                                <div class="vertical layout">
+                                    <paper-icon-item><iron-icon slot="item-icon" icon="icons:class"></iron-icon>[[change.subject]]</paper-icon-item>
+                                    <paper-icon-item><iron-icon slot="item-icon" icon="social:person"></iron-icon>[[change.teacher]]</paper-icon-item>
+                                    <paper-icon-item><iron-icon slot="item-icon" icon="communication:location-on"></iron-icon>[[change.room]]</paper-icon-item>
+                                    <template is="dom-if" if="[[change.group]]"><paper-icon-item><iron-icon slot="item-icon" icon="social:group"></iron-icon>[[change.group]]</paper-icon-item></template>
+                                </div>
+                            </div>
+                            <template is="dom-if" if="[[change.info]]"><paper-icon-item><iron-icon slot="item-icon" icon="icons:info"></iron-icon>[[change.info]]</paper-icon-item></template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </paper-card>
+    </template>
+
+    <script>
+        /**
+         * @customElement
+         * @polymer
+         */
+        class ScheduleStudentChange extends Polymer.Element {
+            static get is() {
+                return 'schedule-student-change';
+            }
+
+            static get properties() {
+                return {
+                    change: Object
+                };
+            }
+
+            static get observers() {
+                return [
+                    '_subjectChanged(change.subject)'
+                ]
+            }
+
+            _subjectChanged(subject) {
+                if (subject === '---') {
+                    this.updateStyles({'--card-color': '#EF9A9A'});
+                } else {
+                    this.updateStyles({'--card-color': '#81D4FA'});
+                }
+            }
+        }
+
+        customElements.define(ScheduleStudentChange.is, ScheduleStudentChange);
+    </script>
+</dom-module>

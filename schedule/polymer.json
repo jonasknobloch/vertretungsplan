@@ -1,0 +1,42 @@
+{
+  "entrypoint": "index.html",
+  "shell": "src/schedule-app.html",
+  "fragments": [
+    "src/schedule-admin-view/schedule-admin-view.html",
+    "src/schedule-error-view/schedule-error-view.html",
+    "src/schedule-manager-view/schedule-manager-view.html",
+    "src/schedule-student-view/schedule-student-view.html"
+  ],
+  "sources": [
+    "src/**/*",
+    "bower.json"
+  ],
+  "extraDependencies": [
+    "schedule.json",
+    "manifest.json",
+    "bower_components/webcomponentsjs/*"
+  ],
+  "lint": {
+    "rules": [
+      "polymer-2"
+    ]
+  },
+  "builds": [
+    {
+      "name": "default",
+      "js": {
+        "minify": true,
+        "compile": true
+      },
+      "css": {
+        "minify": true
+      },
+      "html": {
+        "minify": true
+      },
+      "bundle": true,
+      "addPushManifest": true,
+      "insertPrefetchLinks": true
+    }
+  ]
+}

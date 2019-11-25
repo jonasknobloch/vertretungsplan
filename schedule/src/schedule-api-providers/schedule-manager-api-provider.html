@@ -1,0 +1,64 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../schedule-base-api-provider/schedule-base-api-provider.html">
+
+<dom-module id="schedule-manager-api-provider">
+    <script>
+        /**
+         * @customElement
+         * @polymer
+         */
+        class ScheduleManagerApiProvider extends ScheduleBaseApiProvider {
+            static get is() {
+                return 'schedule-manager-api-provider';
+            }
+
+            static get properties() {
+                return {
+
+                };
+            }
+
+            getManagers() {
+                return new Promise(function (resolve) {
+                    this.generateAjaxRequest({method: 'GET', path: '/v1/managers'}).then(function (response) {
+                        resolve(response);
+                    }.bind(this));
+                }.bind(this));
+            }
+
+            addManager(userId) {
+                return new Promise(function (resolve) {
+                    this.generateAjaxRequest({method: 'POST', path: '/v1/managers', body:{user_id:userId}}).then(function (response) {
+                        resolve(response);
+                    }.bind(this));
+                }.bind(this));
+            }
+
+            deleteManager(userId) {
+                return new Promise(function (resolve) {
+                    this.generateAjaxRequest({method: 'DELETE', path: '/v1/managers/'+userId}).then(function (response) {
+                        resolve(response);
+                    }.bind(this));
+                }.bind(this));
+            }
+
+            addSchoolToManager(userId, schoolId) {
+                return new Promise(function (resolve) {
+                    this.generateAjaxRequest({method: 'POST', path: '/v1/managers/'+userId+'/schools', body:{school_id:schoolId}}).then(function (response) {
+                        resolve(response);
+                    }.bind(this));
+                }.bind(this));
+            }
+
+            removeSchoolFromManager(userId, schoolId) {
+                return new Promise(function (resolve) {
+                    this.generateAjaxRequest({method: 'DELETE', path: '/v1/managers/'+userId+'/schools/'+schoolId}).then(function (response) {
+                        resolve(response);
+                    }.bind(this));
+                }.bind(this));
+            }
+        }
+
+        customElements.define(ScheduleManagerApiProvider.is, ScheduleManagerApiProvider);
+    </script>
+</dom-module>
